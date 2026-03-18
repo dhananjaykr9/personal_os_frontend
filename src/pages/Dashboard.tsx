@@ -142,18 +142,20 @@ const Dashboard: React.FC = () => {
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">System Live</span>
           </div>
           <div className="flex items-center gap-3 px-4 py-1.5 bg-emerald-500/5 border border-emerald-500/10 rounded-full w-fit">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/60">Auth: D_KHARKAR</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/60">ID: D_KHARKAR | Admin Alpha</span>
           </div>
           <div className="flex items-center gap-3 px-4 py-1.5 bg-white/5 border border-white/10 rounded-full w-fit">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Security: Stable</span>
           </div>
         </div>
         <div className="space-y-3">
-          <h2 className="text-7xl font-black text-gradient tracking-tighter leading-tight italic">
-            Welcome Back, Chief Dhananjay
-          </h2>
-          <p className="text-slate-400 text-xl font-medium max-w-2xl leading-relaxed">
-            Neural mapping complete. All operational nodes are synchronized under Protocol <span className="text-indigo-400 font-black tracking-widest italic">ORIN-V1.0</span>.
+          <div className="flex items-center gap-4 mb-2">
+            <h2 className="text-7xl font-black text-gradient tracking-tighter leading-tight italic">
+              Tactical Briefing: Chief Dhananjay
+            </h2>
+          </div>
+          <p className="text-slate-400 text-xl font-medium max-w-3xl leading-relaxed">
+            Neural mapping consolidated. <span className="text-indigo-400 font-black tracking-widest italic">{stats[0].value} objectives</span> pending action. Bio-Sync matrix stabilized at <span className="text-emerald-400 font-black tracking-widest italic">{stats[2].value}</span>.
           </p>
         </div>
       </motion.header>

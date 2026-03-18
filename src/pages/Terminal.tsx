@@ -13,7 +13,8 @@ const INITIAL_BOOT_LOGS: Omit<LogEntry, 'timestamp'>[] = [
   { type: 'system', content: '>>> INITIALIZING BIOMETRIC HANDSHAKE... SUCCESS' },
   { type: 'system', content: '>>> LOADING NEURAL INTERFACE PROTOCOLS... 100%' },
   { type: 'system', content: '>>> MOUNTING HUD DATA PACKETS... COMPLETED' },
-  { type: 'system', content: '>>> DHANANJAY_OS V1.0.0 READY FOR COMMAND INPUT' },
+  { type: 'system', content: '>>> ARCHITECT CLEARANCE: ADMIN ALPHA VERIFIED' },
+  { type: 'system', content: '>>> ORIN_OS V1.0.0 READY FOR COMMAND INPUT' },
 ];
 
 const Terminal: React.FC = () => {
@@ -90,8 +91,11 @@ const Terminal: React.FC = () => {
       case 'logs':
         response = 'fetching system intercepts...\n[AUTH] 23:14:02 - Access Granted to DHANANJAY\n[SYSM] 23:14:05 - Neural Map Updated\n[SYSM] 23:15:01 - Routine Backup Complete';
         break;
+      case 'manifest':
+        response = `SYSTEM MANIFEST - DHANANJAY OS [CORE-X]\n------------------------------------------\nARCHITECT: DHANANJAY KHARKAR\nPROTOCOLS: [ORIN-V1, HUD-ALPHA, BIOMETRIC-SYNC]\nNEURAL NODES: 5 ACTIVE MODULES\nUPLINK: CLOUD-SYNCHRONIZED (VERCEL/RENDER)\nSECURITY: ENCRYPTED KERNEL LAYER\n------------------------------------------`;
+        break;
       case 'help':
-        response = 'AVAILABLE COMMANDS:\n- ls: List system modules\n- whoami: Display user identity\n- system: Core hardware diagnostics\n- status: HUD integrity check\n- logs: Display intercept history\n- clear: Purge terminal buffer';
+        response = 'AVAILABLE COMMANDS:\n- ls: List system modules\n- whoami: Display user identity\n- system: Core hardware diagnostics\n- status: HUD integrity check\n- manifest: Full system architectural breakdown\n- logs: Display intercept history\n- clear: Purge terminal buffer';
         break;
       default:
         response = `bash: command not found: ${cmd}. Type 'help' for instructions.`;

@@ -221,7 +221,14 @@ const Topbar: React.FC = () => {
             <div className="flex items-center gap-4 pl-2 group cursor-pointer">
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-black text-white leading-none uppercase tracking-tighter">Dhananjay K.</p>
-                <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-[0.2em] mt-1">Admin Alpha</p>
+                <div className="flex items-center justify-end gap-1.5 mt-1">
+                  <motion.div 
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.4, 1, 0.4] }} 
+                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                    className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" 
+                  />
+                  <p className="text-[8px] font-bold text-indigo-400 uppercase tracking-[0.2em]">Admin Alpha</p>
+                </div>
               </div>
               <div className="relative">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl group-hover:rotate-6 transition-all">
