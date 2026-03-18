@@ -240,7 +240,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
         transition={{ delay: 0.5 }}
         className="mt-auto space-y-4"
       >
-        {!isCollapsed && <Soundscape />}
+        <div className={cn("transition-all duration-500", isCollapsed ? "opacity-0 invisible h-0" : "opacity-100 visible")}>
+          <Soundscape />
+        </div>
 
         <NavLink
           to="/settings"

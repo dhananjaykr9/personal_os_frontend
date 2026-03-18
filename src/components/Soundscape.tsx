@@ -4,25 +4,17 @@ import { Music, Play, Pause, SkipForward, Volume2 } from 'lucide-react';
 import { orinSound } from '../utils/orinMusic';
 
 const Soundscape: React.FC = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(orinSound.getIsPlaying());
   const [currentSong, setCurrentSong] = useState(orinSound.getCurrentSong());
   const [volume, setVolume] = useState(orinSound.getVolume());
   const [hasError, setHasError] = useState(false);
-  const [ytPlayer, setYtPlayer] = useState<any>(null);
 
   // Load YouTube API
   useEffect(() => {
-    if ((window as any).YT) return;
-    const tag = document.createElement('script');
-    tag.src = "https://www.youtube.com/iframe_api";
-    const firstScriptTag = document.getElementsByTagName('script')[0];
-    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-
-    (window as any).onYouTubeIframeAPIReady = () => {
+    const initPlayer = () => {
       new (window as any).YT.Player('yt-player-hidden', {
         height: '0',
         width: '0',
-        videoId: currentSong.sourceType === 'youtube' ? currentSong.url : '',
         playerVars: {
           'autoplay': 0,
           'controls': 0,
@@ -35,8 +27,17 @@ const Soundscape: React.FC = () => {
         },
         events: {
           'onReady': (event: any) => {
-            setYtPlayer(event.target);
+            orinSound.setYtPlayer(event.target);
             event.target.setVolume(volume * 100);
+            
+            // Sync with current global play state
+            if (orinSound.getIsPlaying()) {
+              const song = orinSound.getCurrentSong();
+              if (song.sourceType === 'youtube') {
+                event.target.loadVideoById(song.url);
+                event.target.playVideo();
+              }
+            }
           },
           'onStateChange': (event: any) => {
             if (event.data === 0) {
@@ -47,47 +48,29 @@ const Soundscape: React.FC = () => {
         }
       });
     };
-  }, []);
 
-  useEffect(() => {
-    const engageAudio = async () => {
-      try {
-        const song = orinSound.getCurrentSong();
-        if (song.sourceType === 'mp3') {
-          await orinSound.play();
-        } else if (ytPlayer && song.sourceType === 'youtube') {
-          ytPlayer.loadVideoById(song.url);
-          ytPlayer.playVideo();
-        }
-        setIsPlaying(true);
-        setHasError(false);
-      } catch (err) {
-        console.warn('Initial soundscape engagement failed:', err);
-        setHasError(true);
-      }
-    };
-
-    const timeout = setTimeout(engageAudio, 1000);
+    if ((window as any).YT && (window as any).YT.Player) {
+      initPlayer();
+    } else {
+      const tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+      (window as any).onYouTubeIframeAPIReady = initPlayer;
+    }
 
     return () => {
-      clearTimeout(timeout);
-      orinSound.pause();
-      if (ytPlayer) ytPlayer.pauseVideo();
+      // NOTE: We don't pause on unmount anymore because the singleton handles it
+      // and we want music to continue if the sidebar just collapses
     };
-  }, [ytPlayer]);
+  }, []);
 
   const togglePlay = async () => {
     try {
-      const song = orinSound.getCurrentSong();
       if (isPlaying) {
         orinSound.pause();
-        if (song.sourceType === 'youtube' && ytPlayer) ytPlayer.pauseVideo();
       } else {
-        if (song.sourceType === 'mp3') {
-          await orinSound.play();
-        } else if (song.sourceType === 'youtube' && ytPlayer) {
-          ytPlayer.playVideo();
-        }
+        await orinSound.play();
       }
       setIsPlaying(!isPlaying);
       setHasError(false);
@@ -98,21 +81,9 @@ const Soundscape: React.FC = () => {
 
   const handleNext = async () => {
     try {
-      orinSound.pause();
-      if (ytPlayer) ytPlayer.pauseVideo();
-      
       await orinSound.next();
-      const nextSong = orinSound.getCurrentSong();
-      setCurrentSong(nextSong);
-      
-      if (nextSong.sourceType === 'mp3') {
-        await orinSound.play();
-      } else if (nextSong.sourceType === 'youtube' && ytPlayer) {
-        ytPlayer.loadVideoById(nextSong.url);
-        ytPlayer.playVideo();
-      }
-      
-      setIsPlaying(true);
+      setCurrentSong(orinSound.getCurrentSong());
+      setIsPlaying(orinSound.getIsPlaying());
       setHasError(false);
     } catch (err) {
       setHasError(true);
@@ -121,7 +92,6 @@ const Soundscape: React.FC = () => {
 
   const updateVolume = (val: number) => {
     orinSound.setVolume(val);
-    if (ytPlayer) ytPlayer.setVolume(val * 100);
     setVolume(val);
   };
 
