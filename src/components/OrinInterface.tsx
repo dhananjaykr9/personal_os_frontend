@@ -1,3 +1,4 @@
+/** ORIN Intelligence Interface - Production Build v1.0.1 */
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Zap, Square } from 'lucide-react';
