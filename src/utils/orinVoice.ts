@@ -16,12 +16,12 @@ class OrinVoice {
     const loadVoices = () => {
       const voices = this.synth.getVoices();
       // Prefer high-quality smooth male voices
-      this.voice = voices.find(v => v.name.includes('Google UK English Male')) || 
-                   voices.find(v => v.name.includes('Microsoft David')) ||
-                   voices.find(v => v.name.includes('Male')) ||
-                   voices.find(v => v.lang === 'en-GB' && v.name.includes('Male')) ||
-                   voices.find(v => v.lang.startsWith('en')) || 
-                   voices[0];
+      this.voice = voices.find(v => v.name.includes('Google UK English Female')) ||
+        voices.find(v => v.name.includes('Microsoft')) ||
+        voices.find(v => v.name.includes('Female')) ||
+        voices.find(v => v.lang === 'en-GB' && v.name.includes('Female')) ||
+        voices.find(v => v.lang.startsWith('en')) ||
+        voices[0];
     };
 
     if (this.synth.onvoiceschanged !== undefined) {

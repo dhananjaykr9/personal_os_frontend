@@ -22,7 +22,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import Soundscape from './Soundscape';
-import { orinSound } from '../utils/orinMusic';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -160,7 +159,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
                     to={nav.path}
                     onMouseEnter={() => setHoveredPath(nav.path)}
                     onMouseLeave={() => setHoveredPath(null)}
-                    onClick={() => orinSound.playInteractionSound()}
                     className={({ isActive }) => cn(
                       "flex items-center gap-3 rounded-2xl transition-all duration-300 group relative overflow-hidden",
                       isCollapsed ? "justify-center p-3.5" : "px-5 py-3.5",
@@ -246,7 +244,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
 
         <NavLink
           to="/settings"
-          onClick={() => orinSound.playInteractionSound()}
           className={({ isActive }) => cn(
             "flex items-center gap-3 rounded-2xl transition-all duration-300 group",
             isCollapsed ? "p-3 justify-center" : "px-4 py-3",
