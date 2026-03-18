@@ -1,0 +1,1332 @@
+Do not use the browser tool
+## Product Requirements Document (PRD)
+
+**Product Name:** Personal Life OS
+**Type:** Personal Productivity & Learning Management Platform
+**User:** Single user (self-hosted)
+**Design Style:** Soft Glassmorphism UI
+
+---
+
+# 1. Product Overview
+
+Personal Life OS is a **self-hosted personal platform** used to manage:
+
+* Daily tasks
+* Learning roadmap
+* Skill tracking
+* Habit tracking
+* Personal notes
+* Productivity analytics
+
+The platform is designed **only for personal use**, allowing full customization and independence from third-party tools like Notion or Trello.
+
+Primary goals:
+
+* Manage daily life and learning in one system
+* Track long-term skill development (Data Engineering)
+* Generate personal productivity insights from stored data
+* Build a lifelong customizable productivity system
+
+---
+
+# 2. Objectives
+
+1. Centralize all personal management activities in one platform.
+2. Track learning progress toward becoming a Data Engineer.
+3. Maintain a structured roadmap for skills and projects.
+4. Enable long-term analytics on personal productivity.
+5. Provide a visually calm and premium UI using glassmorphism.
+
+---
+
+# 3. Target User
+
+Single user (the owner of the system).
+
+Usage scenarios:
+
+* Daily task planning
+* Managing learning roadmap
+* Tracking skill progress
+* Recording notes and insights
+* Viewing productivity analytics
+
+---
+
+# 4. Core Modules
+
+## 4.1 Dashboard
+
+Purpose: Provide a quick overview of daily activities and progress.
+
+Components:
+
+* Today's Tasks
+* Learning Progress
+* Habit Completion
+* Weekly Productivity Chart
+* Current Learning Topic
+* Quick Add Task
+
+Key Data:
+
+* tasks_due_today
+* learning_hours_today
+* habit_completion_rate
+* weekly_progress
+
+---
+
+## 4.2 Task Management
+
+Purpose: Manage daily and long-term tasks.
+
+Features:
+
+* Create task
+* Edit task
+* Mark task complete
+* Set priority
+* Set due date
+* Categorize tasks
+
+Task Fields:
+
+* id
+* title
+* description
+* priority (low / medium / high)
+* status (todo / doing / done)
+* due_date
+* created_at
+* category
+
+Views:
+
+* Daily tasks
+* Weekly tasks
+* All tasks
+
+---
+
+## 4.3 Learning Management
+
+Purpose: Track learning progress toward technical goals.
+
+Features:
+
+* Add learning topic
+* Track completion percentage
+* Record time spent learning
+* Link resources
+
+Learning Fields:
+
+* id
+* topic
+* category
+* resource_link
+* completion_percentage
+* hours_spent
+* status
+
+Example Categories:
+
+* SQL
+* Python
+* Data Engineering
+* Cloud
+* System Design
+
+---
+
+## 4.4 Roadmap Tracker
+
+Purpose: Maintain structured learning roadmap.
+
+Features:
+
+* Define skill roadmap
+* Mark skills as completed
+* Track dependencies between skills
+
+Fields:
+
+* skill_name
+* category
+* difficulty_level
+* status
+* completion_date
+
+Example Skills:
+
+* SQL Window Functions
+* Airflow DAGs
+* ETL Pipeline Design
+* Data Warehousing
+* Cloud Data Pipelines
+
+---
+
+## 4.5 Habit Tracker
+
+Purpose: Track recurring habits.
+
+Features:
+
+* Daily habit tracking
+* Streak tracking
+* Completion statistics
+
+Habit Fields:
+
+* habit_name
+* frequency
+* streak_count
+* completion_status
+* last_completed
+
+Example Habits:
+
+* Coding
+* Reading
+* Exercise
+* Learning Data Engineering
+
+---
+
+## 4.6 Notes System
+
+Purpose: Store structured personal notes.
+
+Features:
+
+* Create note
+* Categorize notes
+* Search notes
+* Markdown support
+
+Fields:
+
+* title
+* category
+* content
+* created_at
+* updated_at
+
+---
+
+## 4.7 Analytics Dashboard
+
+Purpose: Generate insights from collected data.
+
+Metrics:
+
+* weekly learning hours
+* monthly productivity score
+* task completion rate
+* habit consistency
+* roadmap progress
+
+Charts:
+
+* learning hours trend
+* tasks completed per week
+* skill progress
+
+---
+
+# 5. UI / UX Design
+
+Design Theme: **Soft Glassmorphism**
+
+Characteristics:
+
+* Frosted glass cards
+* Soft shadows
+* Transparent layers
+* Blurred backgrounds
+* Smooth rounded edges
+
+### Color Palette
+
+Background
+
+```
+#0F172A (deep navy)
+#111827 (dark slate)
+```
+
+Glass Cards
+
+```
+rgba(255,255,255,0.08)
+rgba(255,255,255,0.12)
+```
+
+Accent
+
+```
+#6366F1 (indigo)
+#22C55E (green success)
+#F59E0B (warning)
+```
+
+---
+
+### Glassmorphism Style
+
+Glass card style:
+
+```
+backdrop-filter: blur(16px)
+background: rgba(255,255,255,0.08)
+border: 1px solid rgba(255,255,255,0.18)
+border-radius: 16px
+box-shadow: 0 8px 32px rgba(0,0,0,0.25)
+```
+
+---
+
+# 6. Navigation Structure
+
+Main layout:
+
+Sidebar Navigation
+
+Dashboard
+Tasks
+Learning
+Roadmap
+Habits
+Notes
+Analytics
+Settings
+
+Top Bar
+
+* Quick Add Task
+* Search
+* Profile
+
+---
+
+# 7. Technical Architecture
+
+Frontend
+
+React
+TailwindCSS
+Framer Motion
+
+Backend
+
+FastAPI
+
+Database
+
+PostgreSQL
+
+Optional Future
+
+* Airflow (task automation)
+* Personal analytics pipelines
+* ML productivity insights
+
+---
+
+# 8. Database Overview
+
+Tables:
+
+tasks
+learning_topics
+roadmap_skills
+habits
+habit_logs
+notes
+learning_logs
+
+Relationships:
+
+* learning_logs → learning_topics
+* habit_logs → habits
+* tasks independent
+
+---
+
+# 9. Versioning Plan
+
+### Version 1 (MVP)
+
+Features:
+
+* Task manager
+* Learning tracker
+* Roadmap tracker
+* Notes
+
+### Version 2
+
+Features:
+
+* Habit tracker
+* Analytics dashboard
+* Charts
+
+### Version 3
+
+Features:
+
+* AI learning recommendations
+* Automation scripts
+* Data pipelines
+
+---
+
+# 10. Success Metrics
+
+System effectiveness will be measured by:
+
+* daily usage consistency
+* task completion rate
+* weekly learning hours
+* roadmap completion progress
+
+## Technical Design Document (TDD)
+
+**Product:** Personal Life OS
+**Type:** Self-Hosted Personal Productivity Platform
+**Architecture Style:** Modular Monolith
+**Frontend:** React + TailwindCSS
+**Backend:** FastAPI
+**Database:** PostgreSQL
+
+---
+
+# 1. System Architecture
+
+High-level architecture:
+
+```
+Frontend (React)
+        │
+        │ REST API
+        ▼
+Backend (FastAPI)
+        │
+        │ ORM (SQLAlchemy)
+        ▼
+PostgreSQL Database
+```
+
+Optional future extensions:
+
+```
+Analytics Layer
+      │
+Python Data Scripts
+      │
+Airflow Scheduler
+```
+
+---
+
+# 2. Project Structure
+
+Backend directory structure:
+
+```
+backend/
+│
+├── app/
+│   ├── main.py
+│   ├── config.py
+│   ├── database.py
+│
+│   ├── models/
+│   │   ├── task_model.py
+│   │   ├── learning_model.py
+│   │   ├── roadmap_model.py
+│   │   ├── habit_model.py
+│   │   └── note_model.py
+│
+│   ├── schemas/
+│   │   ├── task_schema.py
+│   │   ├── learning_schema.py
+│   │   ├── roadmap_schema.py
+│   │   ├── habit_schema.py
+│   │   └── note_schema.py
+│
+│   ├── services/
+│   │   ├── task_service.py
+│   │   ├── learning_service.py
+│   │   ├── roadmap_service.py
+│   │   ├── habit_service.py
+│   │   └── note_service.py
+│
+│   ├── routers/
+│   │   ├── task_router.py
+│   │   ├── learning_router.py
+│   │   ├── roadmap_router.py
+│   │   ├── habit_router.py
+│   │   └── note_router.py
+│
+│   └── utils/
+│       ├── logger.py
+│       └── helpers.py
+```
+
+Frontend directory structure:
+
+```
+frontend/
+│
+├── src/
+│
+├── components/
+│   ├── GlassCard.jsx
+│   ├── TaskCard.jsx
+│   ├── ProgressBar.jsx
+│   ├── Sidebar.jsx
+│
+├── pages/
+│   ├── Dashboard.jsx
+│   ├── Tasks.jsx
+│   ├── Learning.jsx
+│   ├── Roadmap.jsx
+│   ├── Habits.jsx
+│   ├── Notes.jsx
+│   ├── Analytics.jsx
+│
+├── services/
+│   └── api.js
+│
+├── hooks/
+│   └── useTasks.js
+```
+
+---
+
+# 3. Database Design
+
+## tasks table
+
+```
+tasks
+```
+
+| column      | type      |
+| ----------- | --------- |
+| id          | UUID      |
+| title       | TEXT      |
+| description | TEXT      |
+| priority    | VARCHAR   |
+| status      | VARCHAR   |
+| due_date    | DATE      |
+| category    | VARCHAR   |
+| created_at  | TIMESTAMP |
+
+---
+
+## learning_topics table
+
+```
+learning_topics
+```
+
+| column                | type      |
+| --------------------- | --------- |
+| id                    | UUID      |
+| topic                 | TEXT      |
+| category              | VARCHAR   |
+| completion_percentage | INTEGER   |
+| hours_spent           | FLOAT     |
+| status                | VARCHAR   |
+| created_at            | TIMESTAMP |
+
+---
+
+## roadmap_skills table
+
+```
+roadmap_skills
+```
+
+| column          | type    |
+| --------------- | ------- |
+| id              | UUID    |
+| skill_name      | TEXT    |
+| category        | VARCHAR |
+| difficulty      | VARCHAR |
+| status          | VARCHAR |
+| completion_date | DATE    |
+
+---
+
+## habits table
+
+```
+habits
+```
+
+| column     | type      |
+| ---------- | --------- |
+| id         | UUID      |
+| habit_name | TEXT      |
+| frequency  | VARCHAR   |
+| streak     | INTEGER   |
+| created_at | TIMESTAMP |
+
+---
+
+## habit_logs table
+
+```
+habit_logs
+```
+
+| column    | type    |
+| --------- | ------- |
+| id        | UUID    |
+| habit_id  | UUID    |
+| completed | BOOLEAN |
+| log_date  | DATE    |
+
+---
+
+## notes table
+
+```
+notes
+```
+
+| column     | type      |
+| ---------- | --------- |
+| id         | UUID      |
+| title      | TEXT      |
+| category   | VARCHAR   |
+| content    | TEXT      |
+| created_at | TIMESTAMP |
+| updated_at | TIMESTAMP |
+
+---
+
+# 4. API Design
+
+## Task APIs
+
+Create Task
+
+```
+POST /tasks
+```
+
+Request
+
+```
+{
+"title": "Learn SQL window functions",
+"description": "Practice ranking queries",
+"priority": "high",
+"due_date": "2026-03-18",
+"category": "learning"
+}
+```
+
+Response
+
+```
+{
+"id": "uuid",
+"status": "created"
+}
+```
+
+---
+
+Get Tasks
+
+```
+GET /tasks
+```
+
+Filters:
+
+```
+/tasks?status=todo
+/tasks?priority=high
+/tasks?due=today
+```
+
+---
+
+Update Task
+
+```
+PUT /tasks/{id}
+```
+
+---
+
+Delete Task
+
+```
+DELETE /tasks/{id}
+```
+
+---
+
+# 5. Learning Tracker APIs
+
+Create Learning Topic
+
+```
+POST /learning
+```
+
+Request
+
+```
+{
+"topic": "Apache Airflow",
+"category": "data engineering",
+"completion_percentage": 20,
+"hours_spent": 4
+}
+```
+
+---
+
+Update Progress
+
+```
+PATCH /learning/{id}/progress
+```
+
+---
+
+Fetch Topics
+
+```
+GET /learning
+```
+
+---
+
+# 6. Roadmap APIs
+
+Create Skill
+
+```
+POST /roadmap
+```
+
+Example
+
+```
+{
+"skill_name": "ETL Pipeline Design",
+"category": "data engineering",
+"difficulty": "medium"
+}
+```
+
+---
+
+Update Skill Status
+
+```
+PATCH /roadmap/{id}
+```
+
+---
+
+# 7. Habit APIs
+
+Create Habit
+
+```
+POST /habits
+```
+
+---
+
+Log Habit
+
+```
+POST /habits/log
+```
+
+Example
+
+```
+{
+"habit_id": "uuid",
+"log_date": "2026-03-16",
+"completed": true
+}
+```
+
+---
+
+# 8. Notes APIs
+
+Create Note
+
+```
+POST /notes
+```
+
+Fetch Notes
+
+```
+GET /notes
+```
+
+Search Notes
+
+```
+GET /notes?search=sql
+```
+
+---
+
+# 9. Analytics Layer
+
+Analytics queries will run using SQL or Python scripts.
+
+Example metrics:
+
+Task completion rate
+
+```
+completed_tasks / total_tasks
+```
+
+Learning hours per week
+
+```
+SELECT SUM(hours_spent)
+FROM learning_topics
+WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
+```
+
+Habit consistency
+
+```
+habit_logs completed / total_logs
+```
+
+---
+
+# 10. UI Component Design
+
+Reusable components:
+
+GlassCard
+TaskCard
+ProgressBar
+Sidebar
+Modal
+AnalyticsChart
+
+Example glass card style:
+
+```
+background: rgba(255,255,255,0.08)
+backdrop-filter: blur(16px)
+border-radius: 16px
+box-shadow: 0 8px 32px rgba(0,0,0,0.25)
+```
+
+---
+
+# 11. Deployment Strategy
+
+Local development:
+
+```
+Frontend : localhost:5173
+Backend  : localhost:8000
+Database : PostgreSQL
+```
+
+Production deployment options:
+
+Docker container
+
+```
+React → Nginx
+FastAPI → Uvicorn
+PostgreSQL → Docker volume
+```
+
+Possible hosting:
+
+* VPS
+* Home server
+* Cloud VM
+
+---
+
+# 12. Logging
+
+Logging system using Python logging module.
+
+Logs:
+
+```
+task_creation.log
+api_requests.log
+errors.log
+```
+
+---
+
+# 13. Future Extensions
+
+Possible advanced upgrades:
+
+* Personal data warehouse
+* Learning analytics dashboards
+* AI productivity insights
+* Automated habit predictions
+* ETL pipelines analyzing personal behavior
+
+---
+
+## UI Design (Soft Glassmorphism) — Personal Life OS
+
+---
+
+# 1. Design System
+
+### Core Style: **Soft Glassmorphism**
+
+![Image](https://images.openai.com/static-rsc-3/wdwyl6KKrqv2BwMfCxJ-Ls_92aWU2uQdryuBHqDq_cEJXiQiO3o2q8j4w05wGEWHB3VLWaznIbYqccjZ8pFw8IMjI7ni6PyAdY-VbK6Gnbo?purpose=fullsize\&v=1)
+
+![Image](https://images.openai.com/static-rsc-3/SpEHTXquKlQPXfGe_mq-Idt_6fezYw1MpCJ4RChT8LP0FxgScnllMNQMZ7ENivUs2xI1dIMt5AnvBEpXfdT04Rd2yTdc1sF19Ur0rtz6hY8?purpose=fullsize\&v=1)
+
+![Image](https://images.openai.com/static-rsc-3/It-lyP59BiACfAi8PV8L8s4Ndo1PiOQLiwOUNxthARdMznPTZ1r9qqlVoMEUpxYi8hG2-qqdl6tcP-2C12RMFBL1RLRGAHP2lpTgJAbNbJI?purpose=fullsize\&v=1)
+
+![Image](https://images.openai.com/static-rsc-3/265jFjsI99xUz6EQVVTHNp9zxoXwNzlzTiKP1cL8H1ZB5hCtDquDulQ0Kp1bfC7uOfAlZmE9uIIxB5H-d82WjaGJ0TOp4i5GUwWfY0ViNNM?purpose=fullsize\&v=1)
+
+**Visual Rules**
+
+* Background: dark gradient (deep navy → black)
+* Cards: semi-transparent with blur
+* Borders: subtle white opacity
+* Corners: rounded (16–20px)
+* Shadows: soft, diffused
+* Motion: smooth (200–300ms)
+
+---
+
+### Color Tokens
+
+* **Background:** `#0F172A → #020617 (gradient)`
+* **Glass:** `rgba(255,255,255,0.08)`
+* **Border:** `rgba(255,255,255,0.18)`
+* **Primary:** `#6366F1`
+* **Success:** `#22C55E`
+* **Warning:** `#F59E0B`
+* **Text:** `#E5E7EB`
+
+---
+
+### Typography
+
+* Headings: **Semi-bold**
+* Body: Regular
+* Font: Inter / System UI
+
+---
+
+# 2. Layout Structure
+
+### Main Layout
+
+![Image](https://cdn.dribbble.com/userupload/12417017/file/original-fa10e31dde02e708e8391d02cf264def.png?resize=400x0)
+
+![Image](https://cdn.dribbble.com/userupload/3535343/file/original-b87d0186bdcbc24f804f835aecab425f.png?resize=400x0)
+
+![Image](https://asicoder.com/assets/products/1754763296-post.webp)
+
+![Image](https://d585tldpucybw.cloudfront.net/sfimages/default-source/blogs/2025/2025-09/liquid-glass-sidebar-cards.png?sfvrsn=c6b0f037_2)
+
+**Structure**
+
+```
+[ Sidebar ]   [ Topbar ]
+              [ Main Content Grid ]
+```
+
+---
+
+### Sidebar
+
+* Logo (top)
+* Navigation:
+
+  * Dashboard
+  * Tasks
+  * Learning
+  * Roadmap
+  * Habits
+  * Notes
+  * Analytics
+
+Style:
+
+* Glass panel
+* Active item → glowing border + highlight
+
+---
+
+### Topbar
+
+* Search bar
+* Quick Add (+)
+* Date
+* Profile
+
+---
+
+# 3. Screen Designs
+
+---
+
+## 3.1 Dashboard
+
+![Image](https://images.openai.com/static-rsc-3/5n-m4jxNwnu0A-fUkCGLn3PKgAOZtaJMOpyZeNyNvWADYKY9reAr-dS6MRO_li5myFiO_lsIl-8CFqy3jjqU8teN143oGSL2wPrusMHx_Ps?purpose=fullsize\&v=1)
+
+![Image](https://s3-alpha.figma.com/hub/file/5398855201/26ebdb83-9152-4408-9358-e502cb9ab828-cover.png)
+
+![Image](https://cdn.dribbble.com/userupload/15286867/file/original-8edd1a6bc1173a9f75aaa731a4ab7dd1.jpg?resize=400x0)
+
+![Image](https://miro.medium.com/v2/resize%3Afit%3A2000/1%2AXC0xECuKKGLSRTr9f9MFIQ.png)
+
+**Layout (Grid)**
+
+```
+[ Today Tasks ]   [ Learning Progress ]
+[ Habits ]        [ Weekly Stats Chart ]
+[ Roadmap Progress Full Width ]
+```
+
+**Components**
+
+* Glass cards
+* Progress bars
+* Mini charts
+* Quick add task input
+
+---
+
+## 3.2 Tasks Page
+
+![Image](https://cdn.dribbble.com/userupload/13839926/file/original-77bdb61ec18b940382d2e990ba26d16e.jpg?resize=752x\&vertical=center)
+
+![Image](https://cdn.dribbble.com/userupload/38144533/file/original-f24092109c80444b11ad6ce4d86f3f5c.jpg?resize=400x0)
+
+![Image](https://cdn.dribbble.com/userupload/28058329/file/original-515d2d45abc14726a994e26b510ecfa2.png?format=webp\&resize=400x300\&vertical=center)
+
+![Image](https://cdn.dribbble.com/userupload/45744380/file/43fc202f789c806c7d5f238bc7a70a25.png?resize=400x0)
+
+**Views**
+
+* List view
+* Kanban (optional later)
+
+**Task Card**
+
+* Title
+* Priority badge
+* Due date
+* Status toggle
+
+**Interactions**
+
+* Click → open modal
+* Drag (future)
+
+---
+
+## 3.3 Learning Page
+
+![Image](https://cdn.dribbble.com/userupload/44094049/file/original-ed538e0f512a385925542c73717c78d2.png?resize=400x0)
+
+![Image](https://cdn.dribbble.com/userupload/35167835/file/original-04e25bc176aad43042eb3cec164e9a9d.jpg?format=webp\&resize=400x300\&vertical=center)
+
+![Image](https://cdn.dribbble.com/userupload/43293555/file/original-2d8936e8fb6c483b9972875c85a4130e.png?resize=400x0)
+
+![Image](https://cdn.dribbble.com/userupload/43888171/file/original-d194b2443348c9bdff6b7dfaa8924c5d.png?resize=400x0)
+
+**Components**
+
+* Topic cards
+* Progress bar
+* Hours spent
+* Completion %
+
+**UI Pattern**
+
+```
+[ Topic Name ]
+[ Progress Bar ======= ]
+[ 20 hrs | 60% ]
+```
+
+---
+
+## 3.4 Roadmap Page
+
+![Image](https://miro.medium.com/v2/resize%3Afit%3A1400/1%2AGlucwzRP3moApNIgvvNAWw.png)
+
+![Image](https://cdn.vectorstock.com/i/1000v/92/26/roadmap-in-the-form-of-tree-on-black-background-vector-47059226.jpg)
+
+![Image](https://www.slideteam.net/media/catalog/product/cache/1280x720/c/a/career_path_progression_bar_graph_ppt_template_Slide01.jpg)
+
+![Image](https://www.slideegg.com/image/catalog/65864-career-progression-chart.png)
+
+**Layout**
+
+* Vertical roadmap or grid
+* Skill nodes
+
+**States**
+
+* Locked
+* In Progress
+* Completed
+
+---
+
+## 3.5 Habit Tracker
+
+![Image](https://cdn.dribbble.com/userupload/10729666/file/original-0c59601dd467e1a6ff5be51290526588.png)
+
+![Image](https://cdn.dribbble.com/userupload/46514115/file/784db22207f86b6f7592a8d0a5652b00.png?crop=5x117-4647x3598)
+
+![Image](https://cdn.freebiesupply.com/images/large/1x/habits-tracker-app-freebie-d81.jpg)
+
+![Image](https://s3-alpha.figma.com/hub/file/5899494299/27a85d75-b288-405f-bf5d-fe5425515b6a-cover.png)
+
+**Components**
+
+* Habit cards
+* Streak counter
+* Calendar heatmap
+
+---
+
+## 3.6 Notes Page
+
+![Image](https://cdn.dribbble.com/userupload/37124300/file/original-2ad3e71ceacd241239c3a43f43fe62e0.png?resize=752x\&vertical=center)
+
+![Image](https://cdn.dribbble.com/userupload/3238493/file/original-008a327f84ecf07a7a34ba37fac98648.png?format=webp\&resize=400x300\&vertical=center)
+
+![Image](https://uizard.io/static/bd74e89ee33e6d21adf9a86e92259055/a8e47/e9330f37db04094c3742cdac21f005e08d1a705b-1440x835.png)
+
+![Image](https://cdn.dribbble.com/userupload/45456356/file/a6b683cb73cd88dea9d5d97a1dd4ddd8.png?format=webp\&resize=400x300\&vertical=center)
+
+**Layout**
+
+* Left: Notes list
+* Right: Editor
+
+**Features**
+
+* Search
+* Categories
+* Markdown
+
+---
+
+## 3.7 Analytics Page
+
+![Image](https://images.openai.com/static-rsc-3/5n-m4jxNwnu0A-fUkCGLn3PKgAOZtaJMOpyZeNyNvWADYKY9reAr-dS6MRO_li5myFiO_lsIl-8CFqy3jjqU8teN143oGSL2wPrusMHx_Ps?purpose=fullsize\&v=1)
+
+![Image](https://cdn.dribbble.com/userupload/43507872/file/original-df7180b18e97f8487d50bd65cba0a013.png)
+
+![Image](https://cdn.dribbble.com/userupload/16270284/file/original-0f92bb127ffe4d7b7b453d6158a12aba.jpg?format=webp\&resize=400x300\&vertical=center)
+
+![Image](https://cdn.dribbble.com/userupload/46733749/file/02c75b632d622876531e398e84de2352.png?resize=1200x\&vertical=center)
+
+**Charts**
+
+* Learning hours (line chart)
+* Tasks completed (bar chart)
+* Habit consistency (heatmap)
+
+---
+
+# 4. Core Components (Reusable)
+
+### Glass Card
+
+```css
+background: rgba(255,255,255,0.08);
+backdrop-filter: blur(16px);
+border: 1px solid rgba(255,255,255,0.18);
+border-radius: 16px;
+box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+```
+
+---
+
+### Buttons
+
+* Primary: gradient + glow
+* Hover: slight scale + brightness
+
+---
+
+### Input Fields
+
+* Transparent background
+* Bottom border highlight
+* Focus glow
+
+---
+
+# 5. Interaction Design
+
+* Hover → subtle lift
+* Click → ripple / scale down
+* Page transitions → fade + slide
+* Loading → skeleton glass shimmer
+
+---
+
+# 6. Responsive Design
+
+Desktop-first
+
+Breakpoints:
+
+* Desktop: full layout
+* Tablet: collapse sidebar
+* Mobile: bottom navigation
+
+---
+
+# 7. UX Principles
+
+* Minimal cognitive load
+* Fast access to daily tasks
+* Visual progress everywhere
+* No clutter
+* Smooth and calm UI
+
+---
+
+# 8. MVP UI Scope
+
+Build only:
+
+* Dashboard
+* Tasks
+* Learning
+* Roadmap
+
+Skip initially:
+
+* Habit heatmap (add later)
+* Advanced analytics
+* Animations heavy
+
+---
+What data YOU should add
+1. Tasks
+
+Title
+
+Type (learning / personal / work)
+
+Priority (high / medium / low)
+
+Status (todo / doing / done)
+
+Due date
+
+Created date
+
+2. Learning (most important)
+
+Topic name
+
+Category (SQL / Python / DE / Cloud)
+
+Status (not started / in progress / completed)
+
+Completion %
+
+Total hours studied
+
+Last studied date
+
+3. Daily Learning Log (very important)
+
+Topic
+
+Date
+
+Hours studied
+
+What you learned (short text)
+
+Difficulty (easy / medium / hard)
+
+4. Roadmap (skills)
+
+Skill name
+
+Category
+
+Status (not started / in progress / done)
+
+Importance (high / medium / low)
+
+5. Notes
+
+Title
+
+Category
+
+Content
+
+Created date
+
+6. Habits
+
+Habit name
+
+Date
+
+Completed (yes/no)
+
+7. (Very useful) Mistake Log
+
+Topic
+
+Mistake
+
+Correct understanding
+
+Date
+
+Priority (what you MUST track)
+
+Learning
+
+Daily Learning Log
+
+Roadmap
+
+Tasks
+
+remove all fake data from this whole also 
+as well pop of this pagehttp://localhost:5173/tasks not looks properly in screen
