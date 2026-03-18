@@ -12,9 +12,11 @@ const Soundscape: React.FC = () => {
   // Load YouTube API
   useEffect(() => {
     const initPlayer = () => {
+      const song = orinSound.getCurrentSong();
       new (window as any).YT.Player('yt-player-hidden', {
         height: '0',
         width: '0',
+        videoId: song.sourceType === 'youtube' ? song.url : '',
         playerVars: {
           'autoplay': 0,
           'controls': 0,
@@ -23,19 +25,21 @@ const Soundscape: React.FC = () => {
           'iv_load_policy': 3,
           'modestbranding': 1,
           'rel': 0,
-          'showinfo': 0
+          'showinfo': 0,
+          'origin': window.location.origin
         },
         events: {
           'onReady': (event: any) => {
             orinSound.setYtPlayer(event.target);
             event.target.setVolume(volume * 100);
             
-            // Sync with current global play state
+            // Sync with global play state - essential for auto-play after splash
             if (orinSound.getIsPlaying()) {
-              const song = orinSound.getCurrentSong();
               if (song.sourceType === 'youtube') {
-                event.target.loadVideoById(song.url);
                 event.target.playVideo();
+              } else {
+                // If we are playing an MP3 but YT player just ready, ensure YT is paused
+                event.target.pauseVideo();
               }
             }
           },

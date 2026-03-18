@@ -58,12 +58,6 @@ class OrinSoundscape {
     this.ytPlayer = player;
   }
 
-  playInteractionSound() {
-    const interactionSrc = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-    this.interactionAudio.src = interactionSrc;
-    this.interactionAudio.currentTime = 0;
-    this.interactionAudio.play().catch(() => { });
-  }
 
   getCurrentSong() {
     return this.playlist[this.currentIndex];

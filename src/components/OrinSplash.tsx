@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Cpu, Activity, Zap, BrainCircuit } from 'lucide-react';
 import { orin } from '../utils/orinVoice';
+import { orinSound } from '../utils/orinMusic';
 
 interface OrinSplashProps {
   onComplete: () => void;
@@ -22,6 +23,8 @@ const OrinSplash: React.FC<OrinSplashProps> = ({ onComplete }) => {
   const handleInitialize = () => {
     setIsInitialized(true);
     orin.speak("Initializing Orin Protocol. Stand by.");
+    //satisfies user interaction for audio
+    orinSound.play().catch(() => {});
   };
 
   useEffect(() => {
