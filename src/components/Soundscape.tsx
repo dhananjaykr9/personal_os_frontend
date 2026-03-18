@@ -9,6 +9,16 @@ const Soundscape: React.FC = () => {
   const [volume, setVolume] = useState(orinSound.getVolume());
   const [hasError, setHasError] = useState(false);
 
+  // Sync with global singleton state
+  useEffect(() => {
+    const unsubscribe = orinSound.subscribe((state) => {
+      setIsPlaying(state.isPlaying);
+      setCurrentSong(state.song);
+      setVolume(state.volume);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Load YouTube API
   useEffect(() => {
     const initPlayer = () => {

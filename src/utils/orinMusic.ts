@@ -12,9 +12,12 @@ export interface Song {
   sourceType: 'mp3' | 'youtube';
 }
 
+type Listener = (state: { isPlaying: boolean; song: Song; volume: number }) => void;
+
 class OrinSoundscape {
   private audio: HTMLAudioElement;
   private ytPlayer: any = null;
+  private listeners: Listener[] = [];
   private playlist: Song[] = [
     {
       id: 'm_gs',
@@ -28,7 +31,7 @@ class OrinSoundscape {
       id: 'h1',
       title: 'Tum Hi Ho (Strategic Remix)',
       artist: 'Arijit Singh (Ambient)',
-      url: '',
+      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3',
       category: 'Hindi',
       sourceType: 'mp3'
     },
@@ -36,7 +39,7 @@ class OrinSoundscape {
       id: 'm1',
       title: 'Mauli Mauli (Neural Pulse)',
       artist: 'Ajay-Atul (Ambient)',
-      url: '',
+      url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
       category: 'Marathi',
       sourceType: 'mp3'
     }
@@ -54,10 +57,27 @@ class OrinSoundscape {
     this.audio.onended = () => this.next();
   }
 
-  setYtPlayer(player: any) {
-    this.ytPlayer = player;
+  subscribe(listener: Listener) {
+    this.listeners.push(listener);
+    // Return unsubscribe
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== listener);
+    };
   }
 
+  private notify() {
+    const state = {
+      isPlaying: this.isPlaying,
+      song: this.getCurrentSong(),
+      volume: this.audio.volume
+    };
+    this.listeners.forEach(l => l(state));
+  }
+
+  setYtPlayer(player: any) {
+    this.ytPlayer = player;
+    this.notify();
+  }
 
   getCurrentSong() {
     return this.playlist[this.currentIndex];
@@ -66,8 +86,8 @@ class OrinSoundscape {
   async play() {
     const song = this.getCurrentSong();
     this.isPlaying = true;
-
-    // Stop any existing streams first to prevent overlap
+    
+    // Stop any existing streams first
     this.audio.pause();
     if (this.ytPlayer && typeof this.ytPlayer.pauseVideo === 'function') {
       this.ytPlayer.pauseVideo();
@@ -75,12 +95,22 @@ class OrinSoundscape {
 
     if (song.sourceType === 'mp3') {
       if (this.audio.src !== song.url) this.audio.src = song.url;
-      return this.audio.play();
+      try {
+        await this.audio.play();
+      } catch (err) {
+        console.warn('Playback deferred - waiting for user interaction:', err);
+      }
     } else if (song.sourceType === 'youtube' && this.ytPlayer) {
-      this.ytPlayer.loadVideoById(song.url);
-      this.ytPlayer.playVideo();
+      if (typeof this.ytPlayer.loadVideoById === 'function') {
+        // Only load if different
+        const currentId = this.ytPlayer.getVideoData?.()?.video_id;
+        if (currentId !== song.url) {
+          this.ytPlayer.loadVideoById(song.url);
+        }
+        this.ytPlayer.playVideo();
+      }
     }
-    return Promise.resolve();
+    this.notify();
   }
 
   pause() {
@@ -89,22 +119,19 @@ class OrinSoundscape {
     if (this.ytPlayer && typeof this.ytPlayer.pauseVideo === 'function') {
       this.ytPlayer.pauseVideo();
     }
+    this.notify();
   }
 
   async next() {
-    const wasPlaying = this.isPlaying;
     this.pause();
     this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
-    if (wasPlaying) return this.play();
-    return Promise.resolve();
+    await this.play();
   }
 
   async previous() {
-    const wasPlaying = this.isPlaying;
     this.pause();
     this.currentIndex = (this.currentIndex - 1 + this.playlist.length) % this.playlist.length;
-    if (wasPlaying) return this.play();
-    return Promise.resolve();
+    await this.play();
   }
 
   setVolume(vol: number) {
@@ -113,6 +140,7 @@ class OrinSoundscape {
     if (this.ytPlayer && typeof this.ytPlayer.setVolume === 'function') {
       this.ytPlayer.setVolume(safeVol * 100);
     }
+    this.notify();
   }
 
   getVolume() {

@@ -1327,6 +1327,3 @@ Daily Learning Log
 Roadmap
 
 Tasks
-
-remove all fake data from this whole also 
-as well pop of this pagehttp://localhost:5173/tasks not looks properly in screen
