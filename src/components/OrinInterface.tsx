@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Terminal, Command, Zap, Play, Square } from 'lucide-react';
+import { Mic, MicOff, Zap, Square } from 'lucide-react';
 import api from '../api';
 import { orin } from '../utils/orinVoice';
 import { useNavigate } from 'react-router-dom';
