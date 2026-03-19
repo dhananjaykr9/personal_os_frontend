@@ -1,4 +1,4 @@
-/** ORIN Intelligence Interface - Production Build v1.0.1 */
+/** ORIN Intelligence Interface - Production Build v1.0.2 */
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Zap, Square } from 'lucide-react';
@@ -9,63 +9,93 @@ import { useNavigate } from 'react-router-dom';
 const OrinInterface: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [orinResponse, setOrinResponse] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConsole, setShowConsole] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const isProcessingRef = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = true;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;       // Keep listening until user stops
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
 
-      recognitionRef.current.onresult = (event: any) => {
-        const current = event.resultIndex;
-        const resultTranscript = event.results[current][0].transcript;
-        setTranscript(resultTranscript);
-        
-        if (event.results[current].isFinal) {
-          handleSendCommand(resultTranscript);
+      recognition.onresult = (event: any) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+
+        setTranscript(finalTranscript || interimTranscript);
+
+        if (finalTranscript.trim() && !isProcessingRef.current) {
+          handleSendCommand(finalTranscript.trim());
         }
       };
 
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
+      recognition.onend = () => {
+        // If still supposed to be listening (user didn't press stop), restart
+        if (isListening && !isProcessingRef.current) {
+          try { recognition.start(); } catch (_) {}
+        } else {
+          setIsListening(false);
+        }
       };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        setIsListening(false);
+      recognition.onerror = (event: any) => {
+        if (event.error !== 'no-speech') {
+          console.error('Speech recognition error:', event.error);
+          setIsListening(false);
+        }
       };
+
+      recognitionRef.current = recognition;
     }
-  }, []);
+  }, [isListening]);
 
   const toggleListening = () => {
     if (isListening) {
       recognitionRef.current?.stop();
+      setIsListening(false);
+      setShowConsole(false);
     } else {
       setTranscript('');
-      recognitionRef.current?.start();
+      setOrinResponse('');
+      setShowConsole(true);
       setIsListening(true);
-      orin.speak("Listening.");
+      try {
+        recognitionRef.current?.start();
+        orin.speak("Listening.");
+      } catch (_) {}
     }
   };
 
   const handleSendCommand = async (command: string) => {
-    if (!command.trim()) return;
+    if (!command.trim() || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     setIsProcessing(true);
-    setShowConsole(true);
 
     try {
       const response = await api.post('/api/orin/chat', { message: command });
       const { response: orinText, actions } = response.data;
 
+      setOrinResponse(orinText);
       setIsProcessing(false);
+      isProcessingRef.current = false;
       orin.speak(orinText);
+      setTranscript('');
 
-      // Execute actions
+      // Execute navigation actions
       if (actions) {
         actions.forEach((action: any) => {
           if (action.type === 'navigate') {
@@ -76,7 +106,9 @@ const OrinInterface: React.FC = () => {
     } catch (error) {
       console.error('Orin communication error:', error);
       setIsProcessing(false);
-      orin.speak("I am having trouble connecting to my cognitive core.");
+      isProcessingRef.current = false;
+      setOrinResponse("Cognitive uplink error. Backend may be offline.");
+      orin.speak("Connection error.");
     }
   };
 
@@ -104,8 +136,8 @@ const OrinInterface: React.FC = () => {
              
              <div className="space-y-4 max-h-48 overflow-y-auto custom-scrollbar pr-2">
                <div className="space-y-1">
-                 <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest opacity-50 italic">User Input</p>
-                 <p className="text-xs font-medium text-slate-300 leading-relaxed italic">"{transcript || 'Waiting for input...'}"</p>
+                 <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest opacity-50 italic">{isListening ? '⬤ Live' : 'Input'}</p>
+                 <p className="text-xs font-medium text-slate-300 leading-relaxed italic">"{transcript || 'Speak a command...'}"</p>
                </div>
                
                {isProcessing && (
@@ -117,7 +149,14 @@ const OrinInterface: React.FC = () => {
                    >
                      <Zap size={14} />
                    </motion.div>
-                   <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">Processing Cognitive Cycle...</span>
+                   <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest animate-pulse">Processing...</span>
+                 </div>
+               )}
+
+               {orinResponse && !isProcessing && (
+                 <div className="space-y-1 border-t border-white/5 pt-3">
+                   <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest opacity-60">Orin</p>
+                   <p className="text-xs text-slate-200 leading-relaxed">{orinResponse}</p>
                  </div>
                )}
              </div>
