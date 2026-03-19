@@ -41,19 +41,19 @@ const OrinHUD: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Waveform */}
-      <div className="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-6 py-2 bg-indigo-500/5 rounded-full border border-white/5">
-        <div className="flex gap-0.5 items-end h-4">
-          {[...Array(12)].map((_, i) => (
+      {/* Top Status Bar */}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-2 group pointer-events-auto cursor-help">
+        <div className="flex gap-0.5 items-end h-4 opacity-40 group-hover:opacity-100 transition-opacity">
+          {[...Array(8)].map((_, i) => (
             <motion.div
               key={i}
               animate={{ height: [4, 12, 6, 16, 4] }}
               transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.08 }}
-              className="w-0.5 bg-indigo-500/40 rounded-full"
+              className="w-0.5 bg-indigo-500 rounded-full"
             />
           ))}
         </div>
-        <span className="text-[8px] font-black text-indigo-500/30 uppercase tracking-[0.4em] ml-2">Orin Interface Active</span>
+        <span className="text-[7px] font-black text-indigo-500/40 uppercase tracking-[0.5em] group-hover:text-indigo-400/80 transition-colors">ORIN.ACTIVE.INTERFACE</span>
       </div>
     </div>
   );

@@ -1,9 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { format } from 'date-fns';
-import GlassCard from '../components/GlassCard';
-import { Plus, Clock, Target, CheckCircle2, BookOpen, Map as MapIcon, ArrowUpRight, AlertTriangle, Brain } from 'lucide-react';
+import { 
+  Target, 
+  Plus, 
+  Brain, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Clock, 
+  Check,
+  BookOpen,
+  Map as MapIcon,
+  TrendingUp,
+  ChevronRight
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import clsx from 'clsx';
+import { useLocation } from 'react-router-dom';
+
+interface LearningSyllabus {
+  goal: string;
+  sections: {
+    title: string;
+    items: (string | { text: string; completed: boolean })[];
+  }[];
+}
 
 interface LearningTopic {
   id: string;
@@ -12,6 +33,8 @@ interface LearningTopic {
   completion_percentage: number;
   hours_spent: number;
   status: string;
+  syllabus?: LearningSyllabus;
+  last_studied_at?: string;
   created_at: string;
 }
 
@@ -45,8 +68,6 @@ interface Mistake {
   created_at: string;
 }
 
-import { useLocation } from 'react-router-dom';
-
 const Learning: React.FC = () => {
   const location = useLocation();
   const [topics, setTopics] = useState<LearningTopic[]>([]);
@@ -57,6 +78,8 @@ const Learning: React.FC = () => {
   const [showLogModal, setShowLogModal] = useState(false);
   const [showMistakeModal, setShowMistakeModal] = useState(false);
   const [showTopicModal, setShowTopicModal] = useState(false);
+  const [showSyllabusModal, setShowSyllabusModal] = useState(false);
+  const [selectedTopic, setSelectedTopic] = useState<LearningTopic | null>(null);
 
   const [newTopic, setNewTopic] = useState({
     topic: '',
@@ -82,19 +105,97 @@ const Learning: React.FC = () => {
     date: format(new Date(), 'yyyy-MM-dd')
   });
 
-  const container = {
+  const CircularProgress: React.FC<{ percentage: number; size?: number; color?: string }> = ({ percentage, size = 60, color = "#6366f1" }) => {
+    const strokeWidth = 4;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const offset = circumference - (percentage / 100) * circumference;
+
+    return (
+      <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+        <svg className="transform -rotate-90" width={size} height={size}>
+          <circle
+            cx={size / 2} cy={size / 2} r={radius}
+            stroke="currentColor" strokeWidth={strokeWidth}
+            fill="transparent" className="text-white/5"
+          />
+          <motion.circle
+            cx={size / 2} cy={size / 2} r={radius}
+            stroke={color} strokeWidth={strokeWidth}
+            fill="transparent"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: offset }}
+            transition={{ duration: 1, ease: "easeOut" }}
+            strokeLinecap="round"
+          />
+        </svg>
+        <span className="absolute text-[10px] font-black text-white">{percentage}%</span>
+      </div>
+    );
+  };
+
+  const toggleSyllabusItem = async (sectionIdx: number, itemIdx: number) => {
+    if (!selectedTopic || !selectedTopic.syllabus) return;
+
+    const newSyllabus = JSON.parse(JSON.stringify(selectedTopic.syllabus));
+    const section = newSyllabus.sections[sectionIdx];
+    const currentItem = section.items[itemIdx];
+
+    const newItem = typeof currentItem === 'string' 
+      ? { text: currentItem, completed: true }
+      : { ...currentItem, completed: !currentItem.completed };
+
+    section.items[itemIdx] = newItem;
+
+    let totalItems = 0;
+    let completedItems = 0;
+    newSyllabus.sections.forEach((s: any) => {
+      s.items.forEach((item: any) => {
+        totalItems++;
+        if (typeof item !== 'string' && item.completed) completedItems++;
+      });
+    });
+
+    const newPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+    try {
+      const response = await api.patch(`/api/learning/${selectedTopic.id}/progress`, {
+        syllabus: newSyllabus,
+        completion_percentage: newPercentage,
+        status: newPercentage === 100 ? 'completed' : newPercentage > 0 ? 'in_progress' : 'not_started'
+      });
+
+      setSelectedTopic(response.data);
+      setTopics(topics.map(t => t.id === selectedTopic.id ? response.data : t));
+    } catch (error) {
+      console.error("Failed to update syllabus progress:", error);
+    }
+  };
+
+  const container: any = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.08
+        staggerChildren: 0.1,
+        delayChildren: 0.2
       }
     }
   };
 
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+  const itemVariants: any = {
+    hidden: { opacity: 0, scale: 0.95, y: 30 },
+    show: { 
+      opacity: 1, 
+      scale: 1, 
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }
+    }
   };
 
   const fetchData = async () => {
@@ -181,153 +282,171 @@ const Learning: React.FC = () => {
   };
 
   return (
-    <motion.div
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-12"
-    >
-      <motion.div variants={item} className="space-y-6">
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full w-fit">
-            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,1)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Intelligence Engine Active</span>
-          </div>
-          <div className="flex items-center gap-3 px-4 py-1.5 bg-emerald-500/5 border border-emerald-500/10 rounded-full w-fit">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/60">Registry Status: Synchronized</span>
-          </div>
-        </div>
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0 neural-grid opacity-20 pointer-events-none z-0" />
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-slate-950/95 to-slate-900 z-[-1]" />
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-          <div className="space-y-3">
-            <h2 className="text-7xl font-black text-gradient tracking-tighter leading-tight italic">
-              Knowledge Engine
-            </h2>
-            <p className="text-slate-400 text-xl font-medium max-w-2xl leading-relaxed">
-              Architecting evolution through structured mastery. All neural pathways verified for <span className="text-indigo-400 font-black italic">OPTIMAL-LEARNING</span>.
-            </p>
+      <motion.div
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 space-y-12 pb-20"
+      >
+        <section className="space-y-6">
+          <div className="flex justify-between items-end">
+            <motion.div variants={itemVariants}>
+              <h1 className="text-6xl font-black text-white tracking-tighter italic flex items-center gap-4">
+                <Brain className="text-indigo-500 animate-pulse-slow" size={48} />
+                NEURAL <span className="text-indigo-500">HUB</span>
+              </h1>
+              <p className="text-slate-500 font-bold uppercase tracking-[0.4em] text-xs mt-2 pl-1">Operational Strategic Intelligence Module</p>
+            </motion.div>
+            
+            <motion.div variants={itemVariants} className="flex gap-4">
+              <div className="glass-card-premium p-4 rounded-2xl flex items-center gap-4 border border-indigo-500/20">
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                  <TrendingUp size={24} />
+                </div>
+                <div>
+                  <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">Aggregate Mastery</span>
+                  <span className="text-2xl font-black text-white italic">
+                    {topics.length > 0 
+                      ? Math.round(topics.reduce((acc, t) => acc + t.completion_percentage, 0) / topics.length) 
+                      : 0}%
+                  </span>
+                </div>
+              </div>
+            </motion.div>
           </div>
-          <div className="flex bg-white/5 p-2 rounded-[2rem] border border-white/10 backdrop-blur-2xl premium-shadow">
-            <button
-              onClick={() => setActiveTab('topics')}
-              className={`flex items-center gap-2.5 px-6 py-4 rounded-2xl transition-all duration-300 font-black uppercase tracking-widest text-[10px] ${activeTab === 'topics' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-500 hover:text-white'}`}
-            >
-              <BookOpen size={14} />
-              Focus Areas
-            </button>
-            <button
-              onClick={() => setActiveTab('roadmap')}
-              className={`flex items-center gap-2.5 px-6 py-4 rounded-2xl transition-all duration-300 font-black uppercase tracking-widest text-[10px] ${activeTab === 'roadmap' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-500 hover:text-white'}`}
-            >
-              <MapIcon size={14} />
-              Evolution Map
-            </button>
-            <button
-              onClick={() => setActiveTab('logs')}
-              className={`flex items-center gap-2.5 px-6 py-4 rounded-2xl transition-all duration-300 font-black uppercase tracking-widest text-[10px] ${activeTab === 'logs' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-500 hover:text-white'}`}
-            >
-              <Clock size={14} />
-              Intelligence Logs
-            </button>
-            <button
-              onClick={() => setActiveTab('mistakes')}
-              className={`flex items-center gap-2.5 px-6 py-4 rounded-2xl transition-all duration-300 font-black uppercase tracking-widest text-[10px] ${activeTab === 'mistakes' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-500 hover:text-white'}`}
-            >
-              <Brain size={14} />
-              Mistake Analysis
-            </button>
-          </div>
-        </div>
-      </motion.div>
 
-      <AnimatePresence mode="wait">
-        {activeTab === 'topics' ? (
-          <motion.div
-            key="topics"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-          >
-            {topics.map((topic) => (
-              <motion.div
-                key={topic.id}
-                variants={item}
-                whileHover={{ y: -5 }}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-3 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full w-fit">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shadow-[0_0_10px_rgba(99,102,241,1)]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">Intelligence Engine Active</span>
+            </div>
+            <div className="flex items-center gap-3 px-4 py-1.5 bg-emerald-500/5 border border-emerald-500/10 rounded-full w-fit">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/60">Registry Status: Synchronized</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+            <div className="space-y-3">
+              <h2 className="text-7xl font-black text-gradient tracking-tighter leading-tight italic">
+                Knowledge Engine
+              </h2>
+              <p className="text-slate-400 text-xl font-medium max-w-2xl leading-relaxed">
+                Architecting evolution through structured mastery. All neural pathways verified for <span className="text-indigo-400 font-black italic">OPTIMAL-LEARNING</span>.
+              </p>
+            </div>
+            <div className="flex bg-white/5 p-2 rounded-[2rem] border border-white/10 backdrop-blur-2xl premium-shadow">
+              <button
+                onClick={() => setActiveTab('topics')}
+                className={`flex items-center gap-2.5 px-6 py-4 rounded-2xl transition-all duration-300 font-black uppercase tracking-widest text-[10px] ${activeTab === 'topics' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-500 hover:text-white'}`}
               >
-                <GlassCard className="relative overflow-hidden group glass-glow p-8 premium-shadow h-full border border-white/5 hover:border-indigo-500/30 transition-all">
-                  {/* Neural Background visualization */}
-                  <div className="absolute -right-8 -top-8 text-white/5 group-hover:text-indigo-500/10 group-hover:scale-150 transition-all duration-700 -rotate-12 pointer-events-none">
-                    <BookOpen size={180} />
+                <BookOpen size={14} />
+                Focus Areas
+              </button>
+              <button
+                onClick={() => setActiveTab('roadmap')}
+                className={`flex items-center gap-2.5 px-6 py-4 rounded-2xl transition-all duration-300 font-black uppercase tracking-widest text-[10px] ${activeTab === 'roadmap' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-500 hover:text-white'}`}
+              >
+                <MapIcon size={14} />
+                Evolution Map
+              </button>
+              <button
+                onClick={() => setActiveTab('logs')}
+                className={`flex items-center gap-2.5 px-6 py-4 rounded-2xl transition-all duration-300 font-black uppercase tracking-widest text-[10px] ${activeTab === 'logs' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-500 hover:text-white'}`}
+              >
+                <Clock size={14} />
+                Intelligence Logs
+              </button>
+              <button
+                onClick={() => setActiveTab('mistakes')}
+                className={`flex items-center gap-2.5 px-6 py-4 rounded-2xl transition-all duration-300 font-black uppercase tracking-widest text-[10px] ${activeTab === 'mistakes' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'text-slate-500 hover:text-white'}`}
+              >
+                <Brain size={14} />
+                Mistake Analysis
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <AnimatePresence mode="wait">
+          {activeTab === 'topics' ? (
+            <motion.div
+              key="topics"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+            >
+              {topics.map((topic) => (
+                <motion.div
+                  key={topic.id}
+                  variants={itemVariants}
+                  onClick={() => {
+                    setSelectedTopic(topic);
+                    setShowSyllabusModal(true);
+                  }}
+                  className={clsx(
+                    "group relative overflow-hidden rounded-[2.5rem] p-8 transition-all cursor-pointer border border-white/5 h-full flex flex-col justify-between",
+                    topic.completion_percentage === 100 ? "mastered-glow bg-emerald-500/5 hover:bg-emerald-500/10" : "neuro-glow bg-white/5 hover:bg-white/[0.08]"
+                  )}
+                >
+                  <div>
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="p-4 rounded-2xl bg-white/5 text-indigo-400 group-hover:scale-110 transition-transform">
+                        <Brain size={24} />
+                      </div>
+                      <CircularProgress percentage={topic.completion_percentage} color={topic.completion_percentage === 100 ? "#10b981" : "#6366f1"} />
+                    </div>
+
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest block">{topic.category}</span>
+                        <h4 className="text-2xl font-black text-white italic group-hover:text-indigo-400 transition-colors uppercase leading-tight">{topic.topic}</h4>
+                    </div>
                   </div>
-                  <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent group-hover:via-indigo-500/30 transition-all" />
-                  <div className="flex flex-col gap-8">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-[0.3em] mb-2 block">{topic.category}</span>
-                        <h4 className="text-2xl font-bold text-white group-hover:text-indigo-400 transition-colors">
-                          {topic.topic}
-                        </h4>
+
+                  <div className="flex items-center justify-between pt-8">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2 text-slate-500">
+                        <Clock size={14} />
+                        <span className="text-xs font-bold uppercase tracking-widest">{topic.hours_spent}h Spent</span>
                       </div>
-                      <div className="flex items-center gap-2 bg-white/5 text-slate-300 px-4 py-2 rounded-xl border border-white/10 text-sm font-bold shadow-inner">
-                        <Clock size={14} className="text-indigo-400" />
-                        <span>{topic.hours_spent}h Spent</span>
+                      <div className={clsx(
+                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest",
+                        topic.completion_percentage === 100 ? "bg-emerald-500/20 text-emerald-400" : "bg-indigo-500/20 text-indigo-400"
+                      )}>
+                        {topic.completion_percentage === 100 ? "Neuralized" : "Syncing"}
                       </div>
                     </div>
-
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center text-sm font-bold">
-                        <span className="text-slate-500 uppercase tracking-widest text-[10px]">Mastery Efficiency</span>
-                        <span className="text-white bg-indigo-500/10 px-3 py-1 rounded-lg">{topic.completion_percentage}%</span>
-                      </div>
-                      <div className="h-4 bg-white/5 rounded-full overflow-hidden p-[3px] border border-white/5">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${topic.completion_percentage}%` }}
-                          transition={{ duration: 1.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                          className="h-full bg-gradient-to-r from-indigo-600 via-indigo-400 to-purple-500 rounded-full relative"
-                        >
-                          <div className="absolute inset-0 bg-white/20 animate-pulse opacity-10" />
-                        </motion.div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
-                      <span className={`text-[10px] uppercase font-bold px-4 py-2 rounded-xl border tracking-widest ${topic.status === 'completed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                        }`}>
-                        {topic.status.replace('_', ' ')}
-                      </span>
-                      <button className="p-2.5 rounded-xl bg-white/5 text-slate-500 hover:text-white hover:bg-indigo-500 transition-all border border-white/5">
-                        <ArrowUpRight size={20} />
-                      </button>
+                    <div className="flex items-center gap-2 text-indigo-400 group-hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest">
+                      Access Node <ChevronRight size={14} />
                     </div>
                   </div>
-                </GlassCard>
-              </motion.div>
-            ))}
+                  <div className="scanner-light" />
+                </motion.div>
+              ))}
 
-            <motion.div variants={item}>
-              <GlassCard
+              <motion.div 
+                variants={itemVariants}
                 onClick={() => setShowTopicModal(true)}
-                className="flex flex-col items-center justify-center p-12 border-dashed border-white/10 opacity-60 hover:opacity-100 transition-all cursor-pointer group hover:bg-white/5 h-full min-h-[260px] premium-shadow"
-                animate={false}
+                className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-white/10 rounded-[2.5rem] opacity-60 hover:opacity-100 transition-all cursor-pointer group hover:bg-white/5 h-full min-h-[260px] premium-shadow"
               >
                 <div className="p-6 rounded-3xl bg-white/5 group-hover:bg-indigo-600 text-slate-500 group-hover:text-white transition-all shadow-xl group-hover:shadow-indigo-600/40 border border-white/5 group-hover:border-indigo-400/30">
                   <Plus size={36} />
                 </div>
-                <p className="mt-8 font-bold text-slate-400 group-hover:text-white transition-colors text-lg">Initialize Skill Protocol</p>
-              </GlassCard>
+                <p className="mt-8 font-bold text-slate-400 group-hover:text-white transition-colors text-lg uppercase tracking-widest">Initialize Skill Protocol</p>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        ) : activeTab === 'roadmap' ? (
-          <motion.div
-            key="roadmap"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            className="space-y-12"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          ) : activeTab === 'roadmap' ? (
+            <motion.div
+              key="roadmap"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-10"
+            >
               {['Basic', 'Intermediate', 'Advanced'].map((level, levelIdx) => (
                 <div key={level} className="space-y-8">
                   <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.4em] pl-4 flex items-center gap-4">
@@ -343,261 +462,288 @@ const Learning: React.FC = () => {
                         transition={{ delay: levelIdx * 0.15 + i * 0.08 }}
                         whileHover={{ x: 5 }}
                       >
-                        <GlassCard className="group border-white/5 hover:border-indigo-500/40 transition-all cursor-pointer glass-glow premium-shadow p-5">
+                        <div className="group border border-white/5 bg-white/5 rounded-3xl p-5 hover:border-indigo-500/40 transition-all cursor-pointer glass-glow premium-shadow">
                           <div className="flex items-center gap-5">
-                            <div className={`p-3.5 rounded-2xl shadow-xl transition-all duration-500 ${skill.status === 'completed'
-                                ? 'bg-emerald-500 text-white shadow-emerald-500/20'
-                                : 'bg-white/5 text-slate-600 group-hover:bg-indigo-500/20 group-hover:text-indigo-400'
-                              }`}>
+                            <div className={clsx(
+                              "p-3.5 rounded-2xl shadow-xl transition-all duration-500",
+                              skill.status === 'completed' ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-white/5 text-slate-600 group-hover:bg-indigo-500/20 group-hover:text-indigo-400'
+                            )}>
                               {skill.status === 'completed' ? <CheckCircle2 size={22} /> : <Target size={22} />}
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex justify-between items-start">
                                 <h4 className="font-bold text-white group-hover:text-indigo-400 transition-colors truncate">{skill.skill_name}</h4>
-                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border ${skill.importance === 'high' ? 'text-rose-400 border-rose-400/20 bg-rose-400/5' :
-                                    skill.importance === 'medium' ? 'text-amber-400 border-amber-400/20 bg-amber-400/5' :
-                                      'text-emerald-400 border-emerald-400/20 bg-emerald-400/5'
-                                  }`}>
+                                <span className={clsx(
+                                  "text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border",
+                                  skill.importance === 'high' ? 'text-rose-400 border-rose-400/20 bg-rose-400/5' :
+                                  skill.importance === 'medium' ? 'text-amber-400 border-amber-400/20 bg-amber-400/5' :
+                                  'text-emerald-400 border-emerald-400/20 bg-emerald-400/5'
+                                )}>
                                   {skill.importance}
                                 </span>
                               </div>
                               <p className="text-[10px] text-slate-500 uppercase tracking-[0.1em] mt-1.5 font-bold group-hover:text-slate-400 transition-colors">{skill.category}</p>
                             </div>
                           </div>
-                        </GlassCard>
+                        </div>
                       </motion.div>
                     ))}
-                    {roadmap.filter(skill => skill.difficulty === level.toLowerCase()).length === 0 && (
-                      <div className="p-8 rounded-3xl border border-dashed border-white/5 flex items-center justify-center">
-                        <p className="text-xs text-slate-600 italic">No objectives defined</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}
-            </div>
-          </motion.div>
-        ) : activeTab === 'logs' ? (
-          <motion.div
-            key="logs"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            className="space-y-8"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">Latest Intelligence Sessions</h3>
-              <button
-                onClick={() => setShowLogModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all font-bold text-sm shadow-lg shadow-indigo-600/20"
-              >
-                <Plus size={16} />
-                New Log
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-6">
-              {logs.map((log) => (
-                <GlassCard key={log.id} className="p-6 premium-shadow glass-glow">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-4 flex-1">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                          <BookOpen size={20} />
-                        </div>
-                        <div>
-                          <h4 className="text-xl font-bold text-white tracking-tight">{log.topic_name}</h4>
-                          <div className="flex items-center gap-3 text-[10px] uppercase font-black tracking-widest text-slate-500 mt-1">
-                            <span className="flex items-center gap-1.5">
-                              <Clock size={12} className="text-indigo-400" />
-                              {log.hours_studied} Hours
-                            </span>
-                            <span className="w-1 h-1 rounded-full bg-slate-800" />
-                            <span>{log.log_date}</span>
+            </motion.div>
+          ) : activeTab === 'logs' ? (
+            <motion.div
+              key="logs"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="space-y-8"
+            >
+              <div className="flex justify-between items-center text-white">
+                <h3 className="text-xl font-bold uppercase tracking-widest">Intelligence Sessions</h3>
+                <button
+                  onClick={() => setShowLogModal(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl transition-all font-bold text-sm shadow-lg shadow-indigo-600/20"
+                >
+                  <Plus size={16} /> New Record
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                {logs.map((log) => (
+                  <div key={log.id} className="p-6 bg-white/5 border border-white/5 rounded-3xl premium-shadow glass-glow">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-4 flex-1">
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                            <BookOpen size={20} />
+                          </div>
+                          <div>
+                            <h4 className="text-xl font-bold text-white tracking-tight">{log.topic_name}</h4>
+                            <div className="flex items-center gap-3 text-[10px] uppercase font-black tracking-widest text-slate-500 mt-1">
+                              <span className="flex items-center gap-1.5"><Clock size={12} className="text-indigo-400" />{log.hours_studied} Hours</span>
+                              <span className="w-1 h-1 rounded-full bg-slate-800" />
+                              <span>{log.log_date}</span>
+                            </div>
                           </div>
                         </div>
+                        <p className="text-slate-400 text-sm leading-relaxed max-w-3xl pl-16">{log.what_learned}</p>
                       </div>
-                      <p className="text-slate-400 text-sm leading-relaxed max-w-3xl pl-16">
-                        {log.what_learned}
-                      </p>
-                    </div>
-                    <div className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest ${log.difficulty === 'hard' ? 'text-rose-400 border-rose-400/20 bg-rose-400/5' :
+                      <div className={clsx(
+                        "px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest",
+                        log.difficulty === 'hard' ? 'text-rose-400 border-rose-400/20 bg-rose-400/5' :
                         log.difficulty === 'medium' ? 'text-amber-400 border-amber-400/20 bg-amber-400/5' :
-                          'text-emerald-400 border-emerald-400/20 bg-emerald-400/5'
-                      }`}>
-                      {log.difficulty} Intensity
+                        'text-emerald-400 border-emerald-400/20 bg-emerald-400/5'
+                      )}>
+                        {log.difficulty} Intensity
+                      </div>
                     </div>
                   </div>
-                </GlassCard>
-              ))}
-              {logs.length === 0 && (
-                <div className="h-60 rounded-[40px] border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-slate-600 gap-4">
-                  <Clock size={40} className="opacity-20" />
-                  <p className="font-bold uppercase tracking-[0.3em] text-[10px]">No intelligence logs recorded</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="mistakes"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98 }}
-            className="space-y-8"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">Mistake Analysis Registry</h3>
-              <button
-                onClick={() => setShowMistakeModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl transition-all font-bold text-sm shadow-lg shadow-rose-600/20"
-              >
-                <Plus size={16} />
-                Record Mistake
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {mistakes.map((mistake) => (
-                <GlassCard key={mistake.id} className="p-8 premium-shadow border-rose-500/10 hover:border-rose-500/30 transition-all group overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full -translate-y-16 translate-x-16 blur-3xl group-hover:bg-rose-500/10 transition-all" />
-                  <div className="space-y-6 relative z-10">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-1">
-                        <span className="text-[10px] text-rose-400 font-black uppercase tracking-[0.2em]">{mistake.topic}</span>
-                        <h4 className="text-xl font-bold text-white leading-tight pr-10">{mistake.mistake_content}</h4>
+                ))}
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="mistakes"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="space-y-8"
+            >
+              <div className="flex justify-between items-center text-white">
+                <h3 className="text-xl font-bold uppercase tracking-widest">Mistake Analysis</h3>
+                <button
+                  onClick={() => setShowMistakeModal(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl transition-all font-bold text-sm shadow-lg shadow-rose-600/20"
+                >
+                  <Plus size={16} /> Record Flaw
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {mistakes.map((mistake) => (
+                  <div key={mistake.id} className="p-8 bg-white/5 border border-rose-500/10 rounded-[2.5rem] premium-shadow hover:border-rose-500/30 transition-all group relative overflow-hidden">
+                    <div className="space-y-6 relative z-10">
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-rose-400 font-black uppercase tracking-[0.2em]">{mistake.topic}</span>
+                          <h4 className="text-xl font-bold text-white leading-tight pr-10">{mistake.mistake_content}</h4>
+                        </div>
+                        <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                          <AlertTriangle size={20} />
+                        </div>
                       </div>
-                      <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                        <AlertTriangle size={20} />
+                      <div className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-3">
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400"><CheckCircle2 size={12} />Correct Understanding</div>
+                        <p className="text-sm text-slate-300 leading-relaxed italic">"{mistake.correct_understanding}"</p>
                       </div>
-                    </div>
-
-                    <div className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
-                        <CheckCircle2 size={12} />
-                        Correct Understanding
-                      </div>
-                      <p className="text-sm text-slate-300 leading-relaxed italic">
-                        "{mistake.correct_understanding}"
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
-                      <span>{mistake.date}</span>
-                      <span className={`px-2 py-1 rounded-md border ${mistake.importance === 'high' ? 'text-rose-400 border-rose-400/20' : 'text-slate-500 border-white/5'
-                        }`}>
-                        {mistake.importance} Priority
-                      </span>
                     </div>
                   </div>
-                </GlassCard>
-              ))}
-              {mistakes.length === 0 && (
-                <div className="md:col-span-2 h-60 rounded-[40px] border-2 border-dashed border-white/5 flex flex-col items-center justify-center text-slate-600 gap-4">
-                  <Brain size={40} className="opacity-20" />
-                  <p className="font-bold uppercase tracking-[0.3em] text-[10px]">Registry is empty. Flawless execution.</p>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      {/* SYLLABUS MODAL */}
+      <AnimatePresence>
+        {showSyllabusModal && selectedTopic && (
+          <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="w-full max-w-6xl max-h-[85vh] overflow-hidden bg-slate-900 border border-white/10 rounded-[3rem] shadow-2xl flex flex-col">
+              <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/5">
+                <div>
+                  <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.3em] mb-2 block">{selectedTopic.category}</span>
+                  <h3 className="text-4xl font-black text-white italic uppercase tracking-tighter">{selectedTopic.topic}</h3>
                 </div>
-              )}
-            </div>
-          </motion.div>
+                <button onClick={() => setShowSyllabusModal(false)} className="p-4 rounded-full bg-white/5 text-slate-500 hover:text-white transition-all border border-white/10">
+                  <Plus size={24} className="rotate-45" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-8 lg:p-12 space-y-12 luxury-scroll">
+                <AnimatePresence mode="popLayout">
+                  {selectedTopic.syllabus ? (
+                    <motion.div 
+                      key="syllabus-content"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-12"
+                    >
+                      <div className="p-8 rounded-[2rem] bg-indigo-500/5 border border-indigo-500/10 space-y-3 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-4 opacity-10"><Brain size={120} /></div>
+                        <h5 className="flex items-center gap-2 text-[10px] font-black text-indigo-400 uppercase tracking-widest"><Target size={14} />Neural Protocol Objective</h5>
+                        <p className="text-2xl text-slate-200 font-bold italic leading-relaxed relative z-10">"{selectedTopic.syllabus.goal}"</p>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {selectedTopic.syllabus.sections && selectedTopic.syllabus.sections.length > 0 ? (
+                          selectedTopic.syllabus.sections.map((section, idx) => (
+                            <motion.div 
+                              key={idx} 
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{ delay: idx * 0.1 }}
+                              className="space-y-6 p-8 rounded-[2.5rem] bg-slate-800/20 border border-white/5 hover:bg-white/[0.08] transition-all group"
+                            >
+                              <h6 className="text-xl font-black text-white group-hover:text-indigo-400 transition-colors flex items-center gap-4">
+                                <span className="text-indigo-500/20 text-4xl font-black italic">0{idx + 1}</span>{section.title}
+                              </h6>
+                              <ul className="space-y-4">
+                                {section.items.map((bullet, bIdx) => {
+                                  const isCompleted = typeof bullet !== 'string' && bullet.completed;
+                                  const text = typeof bullet === 'string' ? bullet : bullet.text;
+                                  return (
+                                    <li key={bIdx} onClick={() => toggleSyllabusItem(idx, bIdx)} className={clsx("flex items-start gap-4 p-4 rounded-2xl cursor-pointer transition-all border", isCompleted ? "bg-indigo-500/10 border-indigo-500/30" : "hover:bg-white/5 border-transparent")}>
+                                      <div className={clsx("w-6 h-6 rounded-lg border flex items-center justify-center flex-shrink-0 mt-0.5 transition-all shadow-inner", isCompleted ? "bg-indigo-500 border-indigo-500 text-white" : "border-white/20 text-transparent")}>
+                                        <Check size={14} strokeWidth={4} />
+                                      </div>
+                                      <span className={clsx("text-sm font-medium transition-all leading-relaxed", isCompleted ? "text-indigo-200 line-through opacity-50" : "text-slate-300")}>{text}</span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </motion.div>
+                          ))
+                        ) : (
+                          <div className="lg:col-span-2 p-12 rounded-[2.5rem] bg-white/5 border border-dashed border-white/10 flex flex-col items-center justify-center text-slate-500 gap-4">
+                            <Plus size={48} className="opacity-20 rotate-45" />
+                            <p className="font-bold uppercase tracking-widest text-xs">No protocol sections detected</p>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <div key="no-syllabus" className="h-full flex flex-col items-center justify-center text-slate-600 gap-6 py-20">
+                      <AlertTriangle size={64} className="text-indigo-500/40 animate-pulse" />
+                      <div className="text-center space-y-2">
+                        <p className="font-bold uppercase tracking-[0.3em] text-sm text-indigo-400">Node Sync Failed</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-widest">Neural breakdown not available for this objective</p>
+                      </div>
+                    </div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div className="p-8 bg-white/5 border-t border-white/10 flex justify-between items-center">
+                <div className="flex items-center gap-4 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  Ready for Synchronization
+                </div>
+                <button 
+                  onClick={() => setShowSyllabusModal(false)} 
+                  className="px-10 py-4 rounded-2xl bg-indigo-600 text-white font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl shadow-indigo-600/40 hover:bg-indigo-500 transition-all"
+                >
+                  Close Protocol
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
-      {/* Log Modal */}
+      {/* LOG MODAL */}
       {showLogModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg glass-card p-12 border border-white/10 premium-shadow">
-            <h3 className="text-3xl font-black text-white mb-8">Record Intelligence Session</h3>
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg bg-slate-900 p-12 border border-white/10 rounded-[3rem] shadow-2xl">
+            <h3 className="text-3xl font-black text-white mb-8 italic">RECORD SESSION</h3>
             <form onSubmit={handleCreateLog} className="space-y-6">
-              <div className="space-y-2">
-                <label htmlFor="log-topic" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Topic</label>
-                <input id="log-topic" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white" value={newLog.topic_name} onChange={e => setNewLog({ ...newLog, topic_name: e.target.value })} />
-              </div>
+              <input required placeholder="Topic Name" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold" value={newLog.topic_name} onChange={e => setNewLog({ ...newLog, topic_name: e.target.value })} />
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="log-hours" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Hours</label>
-                  <input id="log-hours" type="number" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white" value={newLog.hours_studied} onChange={e => setNewLog({ ...newLog, hours_studied: parseFloat(e.target.value) })} />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="log-intensity" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Intensity</label>
-                  <select id="log-intensity" className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white" value={newLog.difficulty} onChange={e => setNewLog({ ...newLog, difficulty: e.target.value })}>
-                    <option value="easy" className="bg-slate-900">Easy</option>
-                    <option value="medium" className="bg-slate-900">Medium</option>
-                    <option value="hard" className="bg-slate-900">Hard</option>
-                  </select>
-                </div>
+                <input type="number" required placeholder="Hours" className="bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold" value={newLog.hours_studied} onChange={e => setNewLog({ ...newLog, hours_studied: parseFloat(e.target.value) })} />
+                <select className="bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold" value={newLog.difficulty} onChange={e => setNewLog({ ...newLog, difficulty: e.target.value })}>
+                  <option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option>
+                </select>
               </div>
-              <div className="space-y-2">
-                <label htmlFor="log-findings" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Findings</label>
-                <textarea id="log-findings" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white min-h-[100px]" value={newLog.what_learned} onChange={e => setNewLog({ ...newLog, what_learned: e.target.value })} />
-              </div>
+              <textarea required placeholder="What was learned?" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white min-h-[120px] font-bold" value={newLog.what_learned} onChange={e => setNewLog({ ...newLog, what_learned: e.target.value })} />
               <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setShowLogModal(false)} className="flex-1 p-4 rounded-2xl bg-white/5 text-slate-400 font-bold uppercase text-xs">Cancel</button>
-                <button type="submit" className="flex-1 p-4 rounded-2xl bg-indigo-600 text-white font-black uppercase text-xs shadow-lg shadow-indigo-600/20">Submit Record</button>
+                <button type="button" onClick={() => setShowLogModal(false)} className="flex-1 p-5 rounded-2xl bg-white/5 text-slate-500 font-black uppercase text-xs">Abort</button>
+                <button type="submit" className="flex-1 p-5 rounded-2xl bg-indigo-600 text-white font-black uppercase text-xs shadow-xl shadow-indigo-600/30">Sync Record</button>
               </div>
             </form>
           </motion.div>
         </div>
       )}
 
-      {/* Mistake Modal */}
-      {showMistakeModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg glass-card p-12 border border-white/10 premium-shadow">
-            <h3 className="text-3xl font-black text-white mb-8 text-rose-500">Register Operational Flaw</h3>
-            <form onSubmit={handleCreateMistake} className="space-y-6">
-              <div className="space-y-2">
-                <label htmlFor="mistake-topic" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Context/Topic</label>
-                <input id="mistake-topic" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white" value={newMistake.topic} onChange={e => setNewMistake({ ...newMistake, topic: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="mistake-content" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">The Error</label>
-                <textarea id="mistake-content" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white min-h-[80px]" value={newMistake.mistake_content} onChange={e => setNewMistake({ ...newMistake, mistake_content: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="mistake-correction" className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Correction Pathway</label>
-                <textarea id="mistake-correction" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white min-h-[80px]" value={newMistake.correct_understanding} onChange={e => setNewMistake({ ...newMistake, correct_understanding: e.target.value })} />
-              </div>
-              <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setShowMistakeModal(false)} className="flex-1 p-4 rounded-2xl bg-white/5 text-slate-400 font-bold uppercase text-xs">Abort</button>
-                <button type="submit" className="flex-1 p-4 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs shadow-lg shadow-rose-600/20">Archive Analysis</button>
-              </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Topic Modal */}
+      {/* TOPIC MODAL */}
       {showTopicModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md">
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg glass-card p-12 border border-white/10 premium-shadow">
-            <h3 className="text-3xl font-black text-white mb-8">Initialize New Topic</h3>
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg bg-slate-900 p-12 border border-white/10 rounded-[3rem] shadow-2xl">
+            <h3 className="text-3xl font-black text-white mb-8 italic uppercase">Forge New Node</h3>
             <form onSubmit={handleCreateTopic} className="space-y-6">
-              <div className="space-y-2">
-                <label htmlFor="topic-name" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Topic Identification</label>
-                <input id="topic-name" required placeholder="e.g. Distributed Systems Architecture" className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white" value={newTopic.topic} onChange={e => setNewTopic({ ...newTopic, topic: e.target.value })} />
-              </div>
+              <input required placeholder="Topic Name" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold" value={newTopic.topic} onChange={e => setNewTopic({ ...newTopic, topic: e.target.value })} />
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="topic-category" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Classification</label>
-                  <input id="topic-category" required placeholder="e.g. Technical" className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white" value={newTopic.category} onChange={e => setNewTopic({ ...newTopic, category: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <label htmlFor="topic-status" className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Initial Status</label>
-                  <select id="topic-status" className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white" value={newTopic.status} onChange={e => setNewTopic({ ...newTopic, status: e.target.value })}>
-                    <option value="not_started" className="bg-slate-900">Not Started</option>
-                    <option value="in_progress" className="bg-slate-900">In Progress</option>
-                    <option value="completed" className="bg-slate-900">Synchronized</option>
-                  </select>
-                </div>
+                <input required placeholder="Category" className="bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold" value={newTopic.category} onChange={e => setNewTopic({ ...newTopic, category: e.target.value })} />
+                <select className="bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold" value={newTopic.status} onChange={e => setNewTopic({ ...newTopic, status: e.target.value })}>
+                  <option value="not_started">Not Started</option><option value="in_progress">In Progress</option><option value="completed">Synchronized</option>
+                </select>
               </div>
               <div className="flex gap-4 pt-4">
-                <button type="button" onClick={() => setShowTopicModal(false)} className="flex-1 p-4 rounded-2xl bg-white/5 text-slate-400 font-bold uppercase text-xs">Abort</button>
-                <button type="submit" className="flex-1 p-4 rounded-2xl bg-indigo-600 text-white font-black uppercase text-xs shadow-lg shadow-indigo-600/20">Forge Node</button>
+                <button type="button" onClick={() => setShowTopicModal(false)} className="flex-1 p-5 rounded-2xl bg-white/5 text-slate-500 font-black uppercase text-xs">Abort</button>
+                <button type="submit" className="flex-1 p-5 rounded-2xl bg-emerald-600 text-white font-black uppercase text-xs shadow-xl shadow-emerald-600/30">Initialize Node</button>
               </div>
             </form>
           </motion.div>
         </div>
       )}
-    </motion.div>
+
+      {/* MISTAKE MODAL */}
+      {showMistakeModal && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg bg-slate-900 p-12 border border-white/10 rounded-[3rem] shadow-2xl border-rose-500/20">
+            <h3 className="text-3xl font-black text-white mb-8 italic uppercase text-rose-500">Record Operational Flaw</h3>
+            <form onSubmit={handleCreateMistake} className="space-y-6">
+              <input required placeholder="Context/Topic" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold" value={newMistake.topic} onChange={e => setNewMistake({ ...newMistake, topic: e.target.value })} />
+              <textarea required placeholder="The Mistake" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white min-h-[100px] font-bold" value={newMistake.mistake_content} onChange={e => setNewMistake({ ...newMistake, mistake_content: e.target.value })} />
+              <textarea required placeholder="Correct Pathway" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white min-h-[100px] font-bold" value={newMistake.correct_understanding} onChange={e => setNewMistake({ ...newMistake, correct_understanding: e.target.value })} />
+              <div className="flex gap-4 pt-4">
+                <button type="button" onClick={() => setShowMistakeModal(false)} className="flex-1 p-5 rounded-2xl bg-white/5 text-slate-500 font-black uppercase text-xs">Abort</button>
+                <button type="submit" className="flex-1 p-5 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs shadow-xl shadow-rose-600/30">Record Flaw</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+    </div>
   );
 };
 

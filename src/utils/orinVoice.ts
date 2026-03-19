@@ -39,9 +39,36 @@ class OrinVoice {
     if (this.voice) {
       utterance.voice = this.voice;
     }
-    utterance.pitch = 0.9; // Slightly lower for a smooth male resonance
-    utterance.rate = 0.95; // Steady, professional rate
+    utterance.pitch = 0.9;
+    utterance.rate = 0.95;
     this.synth.speak(utterance);
+  }
+
+  // Speak and return a Promise that resolves when speech is done
+  speakAndWait(text: string): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.synth.speaking) {
+        this.synth.cancel();
+      }
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      if (this.voice) {
+        utterance.voice = this.voice;
+      }
+      utterance.pitch = 0.9;
+      utterance.rate = 0.95;
+      utterance.onend = () => resolve();
+      utterance.onerror = () => resolve(); // resolve on error too so mic always restarts
+      this.synth.speak(utterance);
+    });
+  }
+
+  isSpeaking(): boolean {
+    return this.synth.speaking;
+  }
+
+  stop() {
+    this.synth.cancel();
   }
 }
 

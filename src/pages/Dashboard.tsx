@@ -29,7 +29,7 @@ const Dashboard: React.FC = () => {
     title: '',
     description: '',
     priority: 'medium',
-    status: 'todo',
+    status: 'todo' as 'todo' | 'doing' | 'done',
     task_type: 'personal',
     due_date: format(new Date(), 'yyyy-MM-dd'),
     category: 'general'
@@ -186,8 +186,11 @@ const Dashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <motion.div variants={item} className="lg:col-span-2">
-          <GlassCard className="h-full relative overflow-hidden group p-10">
-            <div className="flex justify-between items-center mb-10">
+          <GlassCard className="h-full relative overflow-hidden group p-10 border border-white/5 bg-slate-900/40">
+            {/* Neural Backdrop for Chart */}
+            <div className="absolute inset-0 neural-grid opacity-10 pointer-events-none" />
+            
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12 relative z-10">
               <div className="space-y-1">
                 <h3 className="text-2xl font-black flex items-center gap-3 text-white uppercase tracking-tight">
                   <TrendingUp className="text-indigo-400" size={24} />
@@ -195,26 +198,27 @@ const Dashboard: React.FC = () => {
                 </h3>
                 <p className="text-sm text-slate-500 font-medium">Performance metrics over last 7 rotation cycles</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-end gap-3 h-40">
                 {[...Array(7)].map((_, i) => (
-                  <div key={i} className="flex flex-col items-center gap-2">
-                    <div className="w-12 h-32 bg-white/5 rounded-xl relative overflow-hidden group/bar border border-white/5">
+                  <div key={i} className="flex-1 flex flex-col items-center gap-3 h-full">
+                    <div className="w-full bg-white/5 rounded-2xl relative overflow-hidden group/bar border border-white/5 h-full">
                       <motion.div 
                         initial={{ height: 0 }}
-                        animate={{ height: `${20 + Math.random() * 60}%` }}
-                        transition={{ duration: 1.5, delay: i * 0.1, ease: "circOut" }}
-                        className="absolute bottom-0 w-full bg-gradient-to-t from-indigo-600 via-indigo-400 to-indigo-300"
+                        animate={{ height: `${30 + Math.random() * 60}%` }}
+                        transition={{ duration: 2, delay: i * 0.1, ease: [0.23, 1, 0.32, 1] }}
+                        className="absolute bottom-0 w-full bg-gradient-to-t from-indigo-600/80 via-indigo-500/60 to-indigo-400 group-hover/bar:from-indigo-500 group-hover/bar:to-indigo-300 transition-all"
                       />
+                      <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover/bar:opacity-100 transition-opacity" />
                     </div>
-                    <span className="text-[8px] font-black text-slate-600 uppercase">Day {i + 1}</span>
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">D0{i + 1}</span>
                   </div>
                 ))}
               </div>
             </div>
             
-            <div className="grid gap-10 border-t border-white/5 pt-10">
+            <div className="grid gap-8 border-t border-white/5 pt-10 relative z-10 font-black italic">
               <div className="space-y-1">
-                 <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Active Neural Pathways</h4>
+                 <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Active Neural Pathways</h4>
               </div>
               {learningProgress.map((topic, i) => (
                 <div key={topic.label} className="space-y-4">
@@ -302,7 +306,7 @@ const Dashboard: React.FC = () => {
                   <input required className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold focus:border-indigo-500/50 transition-all outline-none" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} placeholder="e.g. Audit Cryptographic Subsystem" />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Deadline</label>
                     <input type="date" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold focus:border-indigo-500/50 transition-all outline-none" value={newTask.due_date} onChange={e => setNewTask({...newTask, due_date: e.target.value})} />
@@ -313,6 +317,14 @@ const Dashboard: React.FC = () => {
                       <option value="low" className="bg-slate-900">Low Impact</option>
                       <option value="medium" className="bg-slate-900">Standard Impact</option>
                       <option value="high" className="bg-slate-900">Critical Impact</option>
+                    </select>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Status</label>
+                    <select className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-indigo-400 font-bold focus:border-indigo-500/50 transition-all outline-none cursor-pointer" value={newTask.status} onChange={e => setNewTask({...newTask, status: e.target.value as any})}>
+                      <option value="todo" className="bg-slate-900">Todo</option>
+                      <option value="doing" className="bg-slate-900">Doing</option>
+                      <option value="done" className="bg-slate-900">Done</option>
                     </select>
                   </div>
                 </div>

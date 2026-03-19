@@ -164,3 +164,57 @@ body {
 .animate-spin-slow {
   animation: spin-slow 8s linear infinite;
 }
+
+/* Neural Grid Backdrop */
+.neural-grid {
+  background-image: 
+    linear-gradient(to right, rgba(99, 102, 241, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99, 102, 241, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.05); }
+}
+
+.neuro-glow {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.1), inset 0 0 20px rgba(99, 102, 241, 0.05);
+}
+
+.mastered-glow {
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.2), inset 0 0 15px rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.glass-card-premium {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* Luxury Scrollbar */
+.luxury-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.luxury-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+
+.luxury-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.luxury-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, rgba(99, 102, 241, 0.4), rgba(168, 85, 247, 0.4));
+}

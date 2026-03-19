@@ -23,7 +23,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Sidebar isCollapsed={isCollapsed} onToggle={setIsCollapsed} />
       
       <main className={clsx(
-        "flex-1 custom-scrollbar h-screen overflow-y-auto relative z-10 transition-all duration-500 ease-[0.23, 1, 0.32, 1]",
+        "flex-1 custom-scrollbar h-screen overflow-y-auto relative transition-all duration-500 ease-[0.23, 1, 0.32, 1]",
         isCollapsed ? "ml-24" : "ml-72"
       )}>
         <Topbar />

@@ -10,6 +10,7 @@ import Notes from './pages/Notes';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Terminal from './pages/Terminal';
+import Music from './pages/Music';
 import OrinHUD from './components/OrinHUD';
 import OrinSplash from './components/OrinSplash';
 import OrinInterface from './components/OrinInterface';
@@ -49,6 +50,7 @@ function App() {
           <Route path="/notes" element={<Notes />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/terminal" element={<Terminal />} />
+          <Route path="/music" element={<Music />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>

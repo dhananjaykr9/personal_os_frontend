@@ -16,7 +16,8 @@ import {
   BrainCircuit,
   Cpu,
   AlertTriangle,
-  Target
+  Target,
+  Headphones
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -42,6 +43,7 @@ const navGroups = [
     icon: BrainCircuit,
     items: [
       { icon: Target, label: 'Roadmap', path: '/roadmap' },
+      { icon: Headphones, label: 'Music Hub', path: '/music' },
       { icon: BookOpen, label: 'Learning', path: '/learning' },
       { icon: AlertTriangle, label: 'Mistake Registry', path: '/learning?tab=mistakes' },
       { icon: FileText, label: 'Neural Notes', path: '/notes' },

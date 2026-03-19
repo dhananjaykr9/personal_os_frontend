@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Zap, Square } from 'lucide-react';
 import api from '../api';
 import { orin } from '../utils/orinVoice';
+import { orinSound } from '../utils/orinMusic';
 import { useNavigate } from 'react-router-dom';
 
 const OrinInterface: React.FC = () => {
@@ -66,17 +67,18 @@ const OrinInterface: React.FC = () => {
   const toggleListening = () => {
     if (isListening) {
       recognitionRef.current?.stop();
+      orin.stop();
       setIsListening(false);
       setShowConsole(false);
     } else {
       setTranscript('');
       setOrinResponse('');
       setShowConsole(true);
-      setIsListening(true);
-      try {
-        recognitionRef.current?.start();
-        orin.speak("Listening.");
-      } catch (_) {}
+      // Speak the activation word FIRST, then start mic after it finishes
+      orin.speakAndWait("Listening.").then(() => {
+        setIsListening(true);
+        try { recognitionRef.current?.start(); } catch (_) {}
+      });
     }
   };
 
@@ -85,21 +87,39 @@ const OrinInterface: React.FC = () => {
     isProcessingRef.current = true;
     setIsProcessing(true);
 
+    // Stop mic while processing & speaking to prevent echo
+    try { recognitionRef.current?.stop(); } catch (_) {}
+
     try {
       const response = await api.post('/api/orin/chat', { message: command });
       const { response: orinText, actions } = response.data;
 
       setOrinResponse(orinText);
       setIsProcessing(false);
-      isProcessingRef.current = false;
-      orin.speak(orinText);
       setTranscript('');
+
+      // Speak Orin's response — mic is paused during this
+      await orin.speakAndWait(orinText);
+
+      // Re-enable mic after Orin finishes speaking
+      isProcessingRef.current = false;
+      if (isListening) {
+        try { recognitionRef.current?.start(); } catch (_) {}
+      }
 
       // Execute navigation actions
       if (actions) {
         actions.forEach((action: any) => {
           if (action.type === 'navigate') {
             navigate(action.path);
+          } else if (action.type === 'play_music') {
+            // Force play the song found by Orin
+            orinSound.playVideoId(
+              action.videoId,
+              action.title,
+              action.author,
+              action.thumbnail
+            );
           }
         });
       }
@@ -108,7 +128,11 @@ const OrinInterface: React.FC = () => {
       setIsProcessing(false);
       isProcessingRef.current = false;
       setOrinResponse("Cognitive uplink error. Backend may be offline.");
-      orin.speak("Connection error.");
+      await orin.speakAndWait("Connection error.");
+      // Restart mic after error response too
+      if (isListening) {
+        try { recognitionRef.current?.start(); } catch (_) {}
+      }
     }
   };
 

@@ -1,175 +1,104 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Music, Play, Pause, SkipForward, Volume2 } from 'lucide-react';
+import { Music as MusicIcon, Play, Pause, SkipForward, SkipBack, Volume2, Search, Youtube } from 'lucide-react';
 import { orinSound } from '../utils/orinMusic';
 
 const Soundscape: React.FC = () => {
-  const [isPlaying, setIsPlaying] = useState(orinSound.getIsPlaying());
-  const [currentSong, setCurrentSong] = useState(orinSound.getCurrentSong());
-  const [volume, setVolume] = useState(orinSound.getVolume());
-  const [hasError, setHasError] = useState(false);
+  const navigate = useNavigate();
+  const [isPlaying, setIsPlaying]           = useState(orinSound.getIsPlaying());
+  const [currentSong, setCurrentSong]       = useState(orinSound.getCurrentSong());
+  const [volume, setVolume]                 = useState(orinSound.getVolume());
 
-  // Sync with global singleton state
+  // Sync with orinSound singleton
   useEffect(() => {
-    const unsubscribe = orinSound.subscribe((state) => {
+    const unsub = orinSound.subscribe(state => {
       setIsPlaying(state.isPlaying);
       setCurrentSong(state.song);
       setVolume(state.volume);
     });
-    return () => unsubscribe();
+    return () => unsub();
   }, []);
 
-  // Load YouTube API
+  // Initialize YouTube IFrame API (Persistent)
   useEffect(() => {
-    const initPlayer = () => {
-      const song = orinSound.getCurrentSong();
-      new (window as any).YT.Player('yt-player-hidden', {
-        height: '0',
-        width: '0',
-        videoId: song.sourceType === 'youtube' ? song.url : '',
-        playerVars: {
-          'autoplay': 0,
-          'controls': 0,
-          'disablekb': 1,
-          'fs': 0,
-          'iv_load_policy': 3,
-          'modestbranding': 1,
-          'rel': 0,
-          'showinfo': 0,
-          'origin': window.location.origin
-        },
-        events: {
-          'onReady': (event: any) => {
-            orinSound.setYtPlayer(event.target);
-            event.target.setVolume(volume * 100);
-            
-            // Sync with global play state - essential for auto-play after splash
-            if (orinSound.getIsPlaying()) {
-              if (song.sourceType === 'youtube') {
-                event.target.playVideo();
-              } else {
-                // If we are playing an MP3 but YT player just ready, ensure YT is paused
-                event.target.pauseVideo();
-              }
-            }
-          },
-          'onStateChange': (event: any) => {
-            if (event.data === 0) {
-              handleNext();
-            }
-          },
-          'onError': () => setHasError(true)
-        }
-      });
-    };
-
-    if ((window as any).YT && (window as any).YT.Player) {
-      initPlayer();
-    } else {
-      const tag = document.createElement('script');
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-      (window as any).onYouTubeIframeAPIReady = initPlayer;
-    }
-
-    return () => {
-      // NOTE: We don't pause on unmount anymore because the singleton handles it
-      // and we want music to continue if the sidebar just collapses
-    };
-  }, []);
-
-  const togglePlay = async () => {
-    try {
-      if (isPlaying) {
-        orinSound.pause();
-      } else {
-        await orinSound.play();
+    const initYT = () => {
+      if (document.getElementById('yt-player-hidden')) {
+        new (window as any).YT.Player('yt-player-hidden', {
+          height: '0', width: '0', videoId: '',
+          playerVars: { autoplay: 0, controls: 0, rel: 0, modestbranding: 1, origin: window.location.origin },
+          events: {
+            onReady: (e: any) => { orinSound.setYtPlayer(e.target); e.target.setVolume(volume * 100); },
+            onStateChange: (e: any) => { if (e.data === 0) orinSound.next(); },
+          }
+        });
       }
-      setIsPlaying(!isPlaying);
-      setHasError(false);
-    } catch (err) {
-      setHasError(true);
-    }
-  };
+    };
+    if ((window as any).YT?.Player) { initYT(); return; }
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    document.head.appendChild(tag);
+    (window as any).onYouTubeIframeAPIReady = initYT;
+  }, []); // eslint-disable-line
 
-  const handleNext = async () => {
-    try {
-      await orinSound.next();
-      setCurrentSong(orinSound.getCurrentSong());
-      setIsPlaying(orinSound.getIsPlaying());
-      setHasError(false);
-    } catch (err) {
-      setHasError(true);
-    }
-  };
-
-  const updateVolume = (val: number) => {
-    orinSound.setVolume(val);
-    setVolume(val);
-  };
+  const togglePlay = async () => { if (isPlaying) { orinSound.pause(); } else { await orinSound.play(); } };
+  const updateVolume = (val: number) => { orinSound.setVolume(val); setVolume(val); };
+  const hasSong = currentSong.url.length > 0 && currentSong.id !== '';
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 overflow-hidden relative group transition-all hover:bg-white/10">
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-3 transition-all hover:bg-white/[0.08] group relative">
       <div id="yt-player-hidden" className="hidden" />
-      
-      <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20 shadow-lg ${isPlaying ? 'animate-spin-slow' : ''}`}>
-          <Music size={18} />
+
+      {/* Mini-Player HUD */}
+      <div className="flex items-center gap-3 mb-3">
+        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden border border-indigo-500/20 ${isPlaying ? 'shadow-[0_0_12px_rgba(99,102,241,0.5)]' : ''}`}>
+          {currentSong.thumbnail
+            ? <img src={currentSong.thumbnail} alt="" className="w-full h-full object-cover" />
+            : <div className="w-full h-full bg-indigo-500/10 flex items-center justify-center"><MusicIcon size={16} className="text-indigo-400" /></div>}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 overflow-hidden">
-            <h3 className="text-[11px] font-black text-white truncate uppercase tracking-tight">{currentSong.title}</h3>
-            {currentSong.sourceType === 'youtube' && (
-              <span className="text-[7px] px-1 bg-red-500/20 text-red-500 rounded font-black uppercase tracking-widest shrink-0">YT</span>
-            )}
+          <p className="text-[11px] font-black text-white truncate uppercase tracking-tight">
+            {hasSong ? currentSong.title : 'Standby Protocol'}
+          </p>
+          <div className="flex items-center gap-1.5 leading-none">
+            {hasSong && <Youtube size={8} className="text-red-500 flex-shrink-0" />}
+            <p className="text-[9px] font-bold text-slate-500 truncate leading-none">
+              {hasSong ? currentSong.artist : 'Select Neural Audio'}
+            </p>
           </div>
-          <div className="flex items-center justify-between">
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest truncate">{currentSong.artist}</p>
-            {hasError && <span className="text-[7px] font-black text-orange-500 uppercase animate-pulse shrink-0">Error</span>}
-          </div>
+        </div>
+        <button
+          onClick={() => navigate('/music')}
+          className="p-1.5 rounded-lg bg-white/5 text-slate-500 hover:text-white hover:bg-indigo-500/20 transition-all flex-shrink-0"
+          title="Open Music Hub"
+        >
+          <Search size={12} />
+        </button>
+      </div>
+
+      {/* Optimized Controls */}
+      <div className="flex items-center gap-2 mb-2">
+        <button onClick={() => orinSound.previous()} className="p-1.5 rounded-lg bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-all">
+          <SkipBack size={11} />
+        </button>
+        <button onClick={togglePlay} disabled={!hasSong}
+          className="p-2 rounded-lg bg-indigo-500 text-white shadow-lg hover:bg-indigo-400 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+          {isPlaying ? <Pause size={12} fill="white" /> : <Play size={12} fill="white" className="ml-0.5" />}
+        </button>
+        <button onClick={() => orinSound.next()} className="p-1.5 rounded-lg bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-all">
+          <SkipForward size={11} />
+        </button>
+        <div className="flex-1 flex items-center gap-1.5 px-2 py-1 bg-black/20 rounded-lg border border-white/5 group/vol">
+          <Volume2 size={9} className="text-slate-600 group-hover/vol:text-indigo-400 transition-colors" />
+          <input type="range" min="0" max="1" step="0.05" value={volume}
+            onChange={e => updateVolume(parseFloat(e.target.value))}
+            className="w-full h-1 accent-indigo-500 cursor-pointer" />
         </div>
       </div>
 
-      <div className="mt-4 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={togglePlay}
-              className="p-2 rounded-lg bg-indigo-500 text-white shadow-lg hover:bg-indigo-600 transition-colors"
-            >
-              {isPlaying ? <Pause size={12} fill="white" /> : <Play size={12} fill="white" className="ml-0.5" />}
-            </button>
-            <button 
-              onClick={handleNext}
-              className="p-2 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
-            >
-              <SkipForward size={12} />
-            </button>
-          </div>
-          
-          <div className="flex-1 flex items-center gap-2 px-2 py-1.5 bg-black/20 rounded-lg border border-white/5">
-            <Volume2 size={10} className="text-slate-500" />
-            <input 
-              type="range" 
-              min="0" 
-              max="1" 
-              step="0.1" 
-              value={volume} 
-              onChange={(e) => updateVolume(parseFloat(e.target.value))}
-              className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-indigo-500"
-            />
-          </div>
-        </div>
-
-        {/* Mock Progress */}
-        <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
-          <motion.div 
-            className="h-full bg-indigo-500"
-            animate={{ width: isPlaying ? '100%' : '30%' }}
-            transition={{ duration: 180, ease: "linear" }}
-          />
-        </div>
+      <div className="h-0.5 w-full bg-white/5 rounded-full overflow-hidden">
+        <motion.div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+          animate={{ x: isPlaying ? ['-100%', '0%'] : '0%' }} transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }} />
       </div>
     </div>
   );

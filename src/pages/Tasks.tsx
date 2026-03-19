@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlassCard from '../components/GlassCard';
+import { clsx } from 'clsx';
 import { Plus, Trash2, Clock, Zap, Target, CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -25,8 +26,8 @@ const Tasks: React.FC = () => {
     title: '',
     description: '',
     priority: 'medium',
-    status: 'todo',
-    task_type: 'personal',
+    status: 'todo' as 'todo' | 'doing' | 'done',
+    task_type: 'personal' as 'learning' | 'personal' | 'work',
     due_date: format(new Date(), 'yyyy-MM-dd'),
     category: 'general'
   });
@@ -112,12 +113,16 @@ const Tasks: React.FC = () => {
   };
 
   return (
-    <motion.div 
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-12 pb-20 max-w-7xl mx-auto"
-    >
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0 neural-grid opacity-20 pointer-events-none z-0" />
+      <div className="fixed inset-0 bg-gradient-to-b from-slate-950 via-slate-950/95 to-slate-900 z-[-1]" />
+
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 space-y-12 pb-20 max-w-7xl mx-auto"
+      >
       <motion.div variants={item} className="space-y-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-3 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full w-fit">
@@ -131,11 +136,11 @@ const Tasks: React.FC = () => {
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="space-y-3">
-            <h2 className="text-7xl font-black text-gradient tracking-tighter leading-tight italic">
-              Strategic Objectives
+            <h2 className="text-7xl font-black text-gradient tracking-tighter leading-tight italic uppercase">
+              Operational <span className="text-indigo-500">Registry</span>
             </h2>
             <p className="text-slate-400 text-xl font-medium max-w-xl leading-relaxed">
-              Neural mapping of operational landscape. Precision execution authorized under <span className="text-indigo-400 font-black italic">PROT-DECISION</span>.
+              Neural mapping of operational landscape. Precision execution authorized under <span className="text-indigo-400 font-black italic tracking-widest">PROT-STRATEGIC-INTEL</span>.
             </p>
           </div>
           <button 
@@ -152,16 +157,19 @@ const Tasks: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {['todo', 'doing', 'done'].map((status) => (
           <motion.div key={status} variants={item} className="space-y-6">
-            <div className="flex items-center justify-between px-4 py-2 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-3">
-                <span className={`w-2 h-2 rounded-full ${
-                  status === 'todo' ? 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 
-                  status === 'doing' ? 'bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]' : 
-                  'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]'
-                }`} />
-                {status}
-              </h3>
-              <span className="text-[10px] bg-white/10 px-3 py-1 rounded-lg text-slate-300 font-black border border-white/10">
+            <div className="flex items-center justify-between px-6 py-3 bg-white/5 rounded-[1.5rem] border border-white/5 backdrop-blur-xl group hover:border-indigo-500/30 transition-all">
+              <div className="space-y-1">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500 flex items-center gap-3">
+                  <span className={`w-2.5 h-2.5 rounded-full ${
+                    status === 'todo' ? 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse' : 
+                    status === 'doing' ? 'bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,0.6)] animate-pulse' : 
+                    'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]'
+                  }`} />
+                  {status}
+                </h3>
+                <p className="text-[7px] font-black text-slate-700 uppercase tracking-[0.3em]">ORIN.TASK.REGISTRY_0{['todo', 'doing', 'done'].indexOf(status) + 1}</p>
+              </div>
+              <span className="text-[10px] bg-indigo-500/10 px-4 py-1.5 rounded-xl text-indigo-400 font-black border border-indigo-500/20 shadow-lg">
                 {tasks.filter(t => t.status === status).length}
               </span>
             </div>
@@ -177,12 +185,16 @@ const Tasks: React.FC = () => {
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ duration: 0.4 }}
                   >
-                    <GlassCard className="p-6 group relative overflow-hidden h-full border border-white/5 hover:border-indigo-500/30 transition-all">
+                    <GlassCard className={clsx(
+                      "p-7 group relative overflow-hidden h-full border border-white/5 transition-all cursor-pointer",
+                      task.status === 'done' ? "bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/10" : "bg-white/5 hover:bg-white/[0.08] hover:border-indigo-500/30 neuro-glow"
+                    )}>
                       {/* Neural Background visualization */}
-                      <div className="absolute -right-6 -top-6 text-white/5 group-hover:text-indigo-500/10 group-hover:scale-150 transition-all duration-700 -rotate-12 pointer-events-none">
-                        {task.status === 'done' ? <CheckCircle2 size={120} /> : <Target size={120} />}
+                      <div className="absolute -right-8 -top-8 text-white/5 group-hover:text-indigo-500/10 group-hover:scale-150 transition-all duration-700 -rotate-12 pointer-events-none">
+                        {task.status === 'done' ? <CheckCircle2 size={140} /> : <Target size={140} />}
                       </div>
                       <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent group-hover:via-indigo-500/30 transition-all" />
+                      <div className="scanner-light" />
                       <div className="flex flex-col gap-6">
                         <div className="flex justify-between items-start">
                           <div className="flex flex-wrap gap-2">
@@ -247,8 +259,11 @@ const Tasks: React.FC = () => {
               </AnimatePresence>
               
               {tasks.filter(t => t.status === status).length === 0 && !loading && (
-                <div className="h-32 rounded-3xl border-2 border-dashed border-white/[0.03] flex items-center justify-center">
-                  <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-800">No Registry</span>
+                <div className="h-40 rounded-[2.5rem] border-2 border-dashed border-white/[0.03] flex flex-col items-center justify-center gap-4 opacity-40 group hover:bg-white/5 transition-all">
+                  <div className="p-4 rounded-2xl bg-white/5 text-slate-800 group-hover:text-slate-600 transition-colors">
+                    <Zap size={32} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-800 group-hover:text-slate-700">Registry.Clear</span>
                 </div>
               )}
             </div>
@@ -305,7 +320,7 @@ const Tasks: React.FC = () => {
                   <textarea className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-slate-300 min-h-[100px] focus:border-indigo-500/50 transition-all outline-none leading-relaxed font-medium" value={newTask.description} onChange={e => setNewTask({...newTask, description: e.target.value})} placeholder="Specify success criteria and implementation path..." />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Temporal Deadline</label>
                     <input type="date" required className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white cursor-pointer font-bold focus:border-indigo-500/50 transition-all outline-none" value={newTask.due_date} onChange={e => setNewTask({...newTask, due_date: e.target.value})} />
@@ -313,9 +328,17 @@ const Tasks: React.FC = () => {
                   <div className="space-y-3">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Impact Tier</label>
                     <select className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold cursor-pointer focus:border-indigo-500/50 transition-all outline-none appearance-none" value={newTask.priority} onChange={e => setNewTask({...newTask, priority: e.target.value as any})}>
-                      <option value="low" className="bg-slate-900">LOW IMPACT</option>
-                      <option value="medium" className="bg-slate-900">STANDARD IMPACT</option>
-                      <option value="high" className="bg-slate-900">CRITICAL IMPACT</option>
+                      <option value="low" className="bg-slate-900 text-xs">LOW IMPACT</option>
+                      <option value="medium" className="bg-slate-900 text-xs">STANDARD IMPACT</option>
+                      <option value="high" className="bg-slate-900 text-xs">CRITICAL IMPACT</option>
+                    </select>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1">Status Protocol</label>
+                    <select className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-indigo-400 font-bold cursor-pointer focus:border-indigo-500/50 transition-all outline-none appearance-none" value={newTask.status} onChange={e => setNewTask({...newTask, status: e.target.value as any})}>
+                      <option value="todo" className="bg-slate-900 text-xs">TODO [PENDING]</option>
+                      <option value="doing" className="bg-slate-900 text-xs">DOING [ACTIVE]</option>
+                      <option value="done" className="bg-slate-900 text-xs">DONE [COMPLETE]</option>
                     </select>
                   </div>
                 </div>
@@ -347,7 +370,8 @@ const Tasks: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
 
