@@ -12,7 +12,8 @@ import {
   BookOpen,
   Map as MapIcon,
   TrendingUp,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import clsx from 'clsx';
@@ -79,6 +80,7 @@ const Learning: React.FC = () => {
   const [showMistakeModal, setShowMistakeModal] = useState(false);
   const [showTopicModal, setShowTopicModal] = useState(false);
   const [showSyllabusModal, setShowSyllabusModal] = useState(false);
+  const [showRoadmapModal, setShowRoadmapModal] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<LearningTopic | null>(null);
 
   const [newTopic, setNewTopic] = useState({
@@ -104,6 +106,19 @@ const Learning: React.FC = () => {
     importance: 'medium',
     date: format(new Date(), 'yyyy-MM-dd')
   });
+  const [newSkill, setNewSkill] = useState({
+    skill_name: '',
+    category: 'Technical',
+    difficulty: 'basic',
+    importance: 'medium' as 'low' | 'medium' | 'high'
+  });
+
+  const [deleteConfig, setDeleteConfig] = useState<{
+    id: string;
+    type: 'topic' | 'log' | 'skill' | 'mistake';
+    message: string;
+  } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const CircularProgress: React.FC<{ percentage: number; size?: number; color?: string }> = ({ percentage, size = 60, color = "#6366f1" }) => {
     const strokeWidth = 4;
@@ -266,7 +281,12 @@ const Learning: React.FC = () => {
   const handleCreateMistake = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/api/mistakes/', newMistake);
+      // Remove date if empty or invalid
+      const payload = { ...newMistake } as any;
+      if (!payload.date) {
+        delete payload.date;
+      }
+      await api.post('/api/mistakes/', payload);
       setShowMistakeModal(false);
       setNewMistake({
         topic: '',
@@ -279,6 +299,62 @@ const Learning: React.FC = () => {
     } catch (error) {
       console.error('Error creating mistake:', error);
     }
+  };
+  
+
+  const executeDelete = async () => {
+    if (!deleteConfig) return;
+    try {
+      const { id, type } = deleteConfig;
+      if (type === 'mistake') await api.delete(`/api/mistakes/${id}`);
+      else if (type === 'log') await api.delete(`/api/learning-logs/${id}`);
+      else if (type === 'topic') await api.delete(`/api/learning/${id}`);
+      else if (type === 'skill') await api.delete(`/api/roadmap/${id}`);
+      
+      setShowDeleteModal(false);
+      setDeleteConfig(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error during deletion protocol:', error);
+    }
+  };
+
+  const handleCreateSkill = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/api/roadmap/', { ...newSkill, status: 'not_started' });
+      setShowRoadmapModal(false);
+      setNewSkill({
+        skill_name: '',
+        category: 'Technical',
+        difficulty: 'basic',
+        importance: 'medium'
+      });
+      fetchData();
+    } catch (error) {
+      console.error('Error creating skill:', error);
+    }
+  };
+
+  const toggleSkillStatus = async (id: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'completed' ? 'not_started' : 'completed';
+      await api.patch(`/api/roadmap/${id}`, { status: newStatus });
+      fetchData();
+    } catch (error) {
+      console.error('Error updating skill status:', error);
+    }
+  };
+
+  const deleteTask = (id: string, type: 'topic' | 'log' | 'skill' | 'mistake') => {
+    let message = "";
+    if (type === 'skill') message = "Acknowledge: This tactical skill objective will be removed from your roadmap?";
+    else if (type === 'topic') message = "Acknowledge: This entire knowledge node and its syllabus progress will be purged?";
+    else if (type === 'log') message = "Acknowledge: This session record will be permanently purged from the neural archive?";
+    else if (type === 'mistake') message = "Purge this operational flaw from the registry?";
+    
+    setDeleteConfig({ id, type, message });
+    setShowDeleteModal(true);
   };
 
   return (
@@ -395,8 +471,19 @@ const Learning: React.FC = () => {
                 >
                   <div>
                     <div className="flex justify-between items-start mb-6">
-                      <div className="p-4 rounded-2xl bg-white/5 text-indigo-400 group-hover:scale-110 transition-transform">
-                        <Brain size={24} />
+                      <div className="flex gap-3">
+                        <div className="p-4 rounded-2xl bg-white/5 text-indigo-400 group-hover:scale-110 transition-transform">
+                          <Brain size={24} />
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteTask(topic.id, 'topic');
+                          }}
+                          className="p-4 rounded-2xl bg-white/5 text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all border border-transparent hover:border-rose-500/20"
+                        >
+                          <Trash2 size={20} />
+                        </button>
                       </div>
                       <CircularProgress percentage={topic.completion_percentage} color={topic.completion_percentage === 100 ? "#10b981" : "#6366f1"} />
                     </div>
@@ -445,52 +532,96 @@ const Learning: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-10"
+              className="space-y-12"
             >
-              {['Basic', 'Intermediate', 'Advanced'].map((level, levelIdx) => (
-                <div key={level} className="space-y-8">
-                  <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.4em] pl-4 flex items-center gap-4">
-                    <span className="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,1)]" />
-                    {level} Tier
-                  </h3>
-                  <div className="space-y-5">
-                    {roadmap.filter(skill => skill.difficulty === level.toLowerCase()).map((skill, i) => (
-                      <motion.div
-                        key={skill.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: levelIdx * 0.15 + i * 0.08 }}
-                        whileHover={{ x: 5 }}
-                      >
-                        <div className="group border border-white/5 bg-white/5 rounded-3xl p-5 hover:border-indigo-500/40 transition-all cursor-pointer glass-glow premium-shadow">
-                          <div className="flex items-center gap-5">
-                            <div className={clsx(
-                              "p-3.5 rounded-2xl shadow-xl transition-all duration-500",
-                              skill.status === 'completed' ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-white/5 text-slate-600 group-hover:bg-indigo-500/20 group-hover:text-indigo-400'
-                            )}>
-                              {skill.status === 'completed' ? <CheckCircle2 size={22} /> : <Target size={22} />}
-                            </div>
-                            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-end">
+                <div className="space-y-4">
+                  <h3 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none">Intelligence Strata</h3>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-relaxed max-w-lg">Neural mapping of the cognitive evolution path. Each node represents a strategic milestone in the mastery of the tactical landscape.</p>
+                </div>
+                <button
+                  onClick={() => setShowRoadmapModal(true)}
+                  className="group relative flex items-center gap-3 px-8 py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-[1.5rem] transition-all duration-300 shadow-[0_0_30px_rgba(99,102,241,0.2)] font-black uppercase tracking-widest text-[9px] active:scale-95"
+                >
+                  <Plus size={16} />
+                  Initialize Evolution Node
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+                {['Basic', 'Intermediate', 'Advanced'].map((level, levelIdx) => (
+                  <div key={level} className="space-y-8">
+                    <div className="flex items-center justify-between px-6 py-3 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-xl">
+                      <h4 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.4em] flex items-center gap-4">
+                        <span className={`w-2.5 h-2.5 rounded-full ${level === 'Basic' ? 'bg-indigo-500' : level === 'Intermediate' ? 'bg-amber-500' : 'bg-rose-500'} shadow-[0_0_12px_rgba(99,102,241,0.5)]`} />
+                        {level} Tier
+                      </h4>
+                      <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">{roadmap.filter(s => s.difficulty === level.toLowerCase()).length} Nodes</span>
+                    </div>
+
+                    <div className="space-y-5">
+                      {roadmap.filter(skill => skill.difficulty === level.toLowerCase()).map((skill, i) => (
+                        <motion.div
+                          key={skill.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: levelIdx * 0.15 + i * 0.08 }}
+                          className="group"
+                        >
+                          <div className={clsx(
+                            "relative border border-white/5 bg-white/5 rounded-3xl p-6 transition-all luxury-glow premium-shadow overflow-hidden",
+                            skill.status === 'completed' ? "border-emerald-500/30 bg-emerald-500/5 shadow-[0_0_30px_rgba(16,185,129,0.05)]" : "hover:border-indigo-500/40 hover:bg-white/10"
+                          )}>
+                            <div className="scanner-light" />
+                            <div className="relative z-10 space-y-5">
                               <div className="flex justify-between items-start">
-                                <h4 className="font-bold text-white group-hover:text-indigo-400 transition-colors truncate">{skill.skill_name}</h4>
-                                <span className={clsx(
-                                  "text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-md border",
-                                  skill.importance === 'high' ? 'text-rose-400 border-rose-400/20 bg-rose-400/5' :
-                                  skill.importance === 'medium' ? 'text-amber-400 border-amber-400/20 bg-amber-400/5' :
-                                  'text-emerald-400 border-emerald-400/20 bg-emerald-400/5'
+                                <div className={clsx(
+                                  "p-3 rounded-2xl transition-all duration-500 border",
+                                  skill.status === 'completed' ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/40' : 'bg-white/5 border-white/5 text-slate-600 group-hover:bg-indigo-500/20 group-hover:text-indigo-400'
                                 )}>
-                                  {skill.importance}
-                                </span>
+                                  {skill.status === 'completed' ? <CheckCircle2 size={24} /> : <Brain size={24} />}
+                                </div>
+                                <div className="flex gap-2">
+                                  <button 
+                                    onClick={() => deleteTask(skill.id, 'skill')}
+                                    className="p-3 bg-white/5 rounded-xl text-slate-700 hover:text-rose-500 hover:bg-rose-500/10 transition-all border border-white/5 opacity-0 group-hover:opacity-100"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
                               </div>
-                              <p className="text-[10px] text-slate-500 uppercase tracking-[0.1em] mt-1.5 font-bold group-hover:text-slate-400 transition-colors">{skill.category}</p>
+                              
+                              <div className="space-y-1">
+                                <h4 className="text-xl font-black text-white italic group-hover:text-indigo-400 transition-colors uppercase leading-none">{skill.skill_name}</h4>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{skill.category}</span>
+                                  <span className={clsx(
+                                    "w-1 h-1 rounded-full",
+                                    skill.importance === 'high' ? 'bg-rose-500' : skill.importance === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'
+                                  )} />
+                                  <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest italic">{skill.importance} impact</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                <button 
+                                  onClick={() => toggleSkillStatus(skill.id, skill.status)}
+                                  className={clsx(
+                                    "w-full py-3 rounded-2xl font-black uppercase text-[9px] tracking-[0.2em] transition-all",
+                                    skill.status === 'completed' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20" : "bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 hover:bg-indigo-400"
+                                  )}
+                                >
+                                  {skill.status === 'completed' ? 'Operationalized' : 'Authorize Sync'}
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </motion.div>
           ) : activeTab === 'logs' ? (
             <motion.div
@@ -530,12 +661,22 @@ const Learning: React.FC = () => {
                         <p className="text-slate-400 text-sm leading-relaxed max-w-3xl pl-16">{log.what_learned}</p>
                       </div>
                       <div className={clsx(
-                        "px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest",
-                        log.difficulty === 'hard' ? 'text-rose-400 border-rose-400/20 bg-rose-400/5' :
-                        log.difficulty === 'medium' ? 'text-amber-400 border-amber-400/20 bg-amber-400/5' :
-                        'text-emerald-400 border-emerald-400/20 bg-emerald-400/5'
+                        "flex flex-col items-end gap-3"
                       )}>
-                        {log.difficulty} Intensity
+                        <div className={clsx(
+                          "px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-widest",
+                          log.difficulty === 'hard' ? 'text-rose-400 border-rose-400/20 bg-rose-400/5' :
+                          log.difficulty === 'medium' ? 'text-amber-400 border-amber-400/20 bg-amber-400/5' :
+                          'text-emerald-400 border-emerald-400/20 bg-emerald-400/5'
+                        )}>
+                          {log.difficulty} Intensity
+                        </div>
+                        <button 
+                          onClick={() => deleteTask(log.id, 'log')}
+                          className="p-2.5 rounded-xl bg-white/5 text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 transition-all border border-transparent hover:border-rose-500/20"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -568,8 +709,19 @@ const Learning: React.FC = () => {
                           <span className="text-[10px] text-rose-400 font-black uppercase tracking-[0.2em]">{mistake.topic}</span>
                           <h4 className="text-xl font-bold text-white leading-tight pr-10">{mistake.mistake_content}</h4>
                         </div>
-                        <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                          <AlertTriangle size={20} />
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteTask(mistake.id, 'mistake');
+                            }}
+                            className="p-2.5 rounded-xl bg-white/5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-400 transition-all border border-transparent hover:border-rose-500/20"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                          <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            <AlertTriangle size={20} />
+                          </div>
                         </div>
                       </div>
                       <div className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-3">
@@ -743,6 +895,84 @@ const Learning: React.FC = () => {
           </motion.div>
         </div>
       )}
+      {/* ROADMAP MODAL */}
+      <AnimatePresence>
+        {showRoadmapModal && (
+          <div className="fixed inset-0 z-[500] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-md">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg bg-slate-900 p-12 border border-white/10 rounded-[3rem] shadow-2xl relative overflow-hidden">
+              <div className="scanner-light" />
+              <h3 className="text-3xl font-black text-white mb-8 italic uppercase tracking-tighter">Initialize Evolution Node</h3>
+              <form onSubmit={handleCreateSkill} className="space-y-6 relative z-10">
+                <input required placeholder="Skill/Objective Name" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold focus:border-indigo-500/50 outline-none transition-all" value={newSkill.skill_name} onChange={e => setNewSkill({ ...newSkill, skill_name: e.target.value })} />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Intelligence Stratum</label>
+                    <select className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold cursor-pointer" value={newSkill.difficulty} onChange={e => setNewSkill({ ...newSkill, difficulty: e.target.value })}>
+                      <option value="basic">Basic Tier</option>
+                      <option value="intermediate">Intermediate Tier</option>
+                      <option value="advanced">Advanced Tier</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Strategic Impact</label>
+                    <select className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold cursor-pointer" value={newSkill.importance} onChange={e => setNewSkill({ ...newSkill, importance: e.target.value as any })}>
+                      <option value="low">Low Impact</option>
+                      <option value="medium">Medium Impact</option>
+                      <option value="high">High Impact</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-2">Operational Category</label>
+                  <input required placeholder="e.g. Technical, Tactical, Logic" className="w-full bg-white/5 border border-white/10 rounded-2xl p-5 text-white font-bold focus:border-indigo-500/50 outline-none transition-all" value={newSkill.category} onChange={e => setNewSkill({ ...newSkill, category: e.target.value })} />
+                </div>
+                <div className="flex gap-4 pt-6">
+                  <button type="button" onClick={() => setShowRoadmapModal(false)} className="flex-1 p-5 rounded-2xl bg-white/5 text-slate-500 font-black uppercase text-xs hover:bg-white/10 transition-all border border-white/5">Abort</button>
+                  <button type="submit" className="flex-1 p-5 rounded-2xl bg-indigo-600 text-white font-black uppercase text-xs shadow-xl shadow-indigo-600/30 hover:bg-indigo-500 transition-all">Authorize Node</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {showDeleteModal && deleteConfig && (
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-md bg-slate-900 border border-rose-500/30 rounded-[3rem] p-10 shadow-[0_0_50px_rgba(225,29,72,0.2)]"
+            >
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="p-6 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-[0_0_20px_rgba(225,29,72,0.1)]">
+                  <Trash2 size={40} />
+                </div>
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Protocol: Data Purge</h3>
+                <p className="text-slate-400 font-medium leading-relaxed">
+                  {deleteConfig.message}
+                </p>
+                <div className="flex gap-4 w-full pt-4">
+                  <button 
+                    onClick={() => setShowDeleteModal(false)}
+                    className="flex-1 p-5 rounded-2xl bg-white/5 text-slate-500 font-black uppercase text-xs hover:bg-white/10 transition-all border border-white/5"
+                  >
+                    Abort
+                  </button>
+                  <button 
+                    onClick={executeDelete}
+                    className="flex-1 p-5 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs shadow-xl shadow-rose-600/30 hover:bg-rose-500 transition-all"
+                  >
+                    Purge Node
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

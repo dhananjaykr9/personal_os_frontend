@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api';
-import GlassCard from '../components/GlassCard';
-import { Plus, Search, FileText, BrainCircuit, X, Zap, Trash2, AlertTriangle } from 'lucide-react';
+import { Plus, Search, FileText, BrainCircuit, X, Zap, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import clsx from 'clsx';
 import ReactMarkdown from 'react-markdown';
 
 interface Note {
@@ -101,13 +101,15 @@ const Notes: React.FC = () => {
   };
 
   return (
-    <>
+    <div className="relative min-h-screen">
+      <div className="fixed inset-0 neural-grid opacity-20 pointer-events-none z-0" />
+      
       <motion.div 
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="space-y-12 pb-20 max-w-7xl mx-auto h-[calc(100vh-120px)] overflow-hidden"
-    >
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="relative z-10 space-y-12 pb-20 max-w-7xl mx-auto"
+      >
       <motion.div variants={item} className="space-y-6">
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-3 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full w-fit">
@@ -139,7 +141,7 @@ const Notes: React.FC = () => {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-4 flex flex-col gap-6 overflow-hidden">
           <div className="relative group">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors" size={20} />
@@ -152,24 +154,28 @@ const Notes: React.FC = () => {
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar pb-20">
+          <div className="flex-1 space-y-4 pr-2 custom-scrollbar pb-20">
             {notes.map((note) => {
               const isActive = activeNote?.id === note.id;
               return (
                 <motion.div key={note.id} variants={item} onClick={() => { setActiveNote(note); }}>
-                  <GlassCard className={`p-6 cursor-pointer border transition-all ${isActive ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-white/5'} hover:border-indigo-500/20`}>
-                    <div className="flex justify-between items-start mb-4">
-                      <div className={`p-2.5 rounded-xl ${isActive ? 'bg-indigo-500 text-white' : 'bg-white/5 text-indigo-400'}`}>
-                        <FileText size={18} />
+                  <div className={clsx(
+                    "p-6 cursor-pointer border transition-all rounded-[2rem] relative group overflow-hidden premium-shadow",
+                    isActive ? 'border-indigo-500/40 bg-indigo-500/10' : 'border-white/5 bg-white/5'
+                  )}>
+                    <div className="scanner-light" />
+                    <div className="flex justify-between items-start mb-4 relative z-10">
+                      <div className={`p-3 rounded-2xl ${isActive ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 text-indigo-400'}`}>
+                        <FileText size={20} />
                       </div>
-                      <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">{format(new Date(note.created_at), 'MMM d, yyyy')}</span>
+                      <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{format(new Date(note.created_at), 'MMM d, yyyy')}</span>
                     </div>
-                    <h4 className="text-xl font-black text-white group-hover:text-indigo-400 truncate tracking-tight uppercase">{note.title}</h4>
-                    <div className="flex items-center gap-3 mt-4">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400 border border-indigo-400/20 px-2 py-0.5 rounded-lg">{note.category}</span>
-                      <span className={`text-[9px] font-black uppercase tracking-widest ${getComplexity(note.content).color}`}>{getComplexity(note.content).label}</span>
+                    <h4 className="text-xl font-black text-white group-hover:text-indigo-400 truncate tracking-tight uppercase italic relative z-10">{note.title}</h4>
+                    <div className="flex items-center gap-3 mt-4 relative z-10">
+                      <span className="text-[9px] font-black uppercase tracking-[0.2em] text-indigo-400 bg-indigo-400/5 px-3 py-1 rounded-lg border border-indigo-400/10">{note.category}</span>
+                      <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${getComplexity(note.content).color}`}>{getComplexity(note.content).label}</span>
                     </div>
-                  </GlassCard>
+                  </div>
                 </motion.div>
               );
             })}
@@ -182,39 +188,46 @@ const Notes: React.FC = () => {
           </div>
         </div>
 
-        <div className="lg:col-span-8 overflow-hidden h-full">
-           <GlassCard className="h-full flex flex-col p-0 border border-white/5 relative bg-white/[0.01]">
+        <div className="lg:col-span-8 sticky top-0">
+           <div className="min-h-[600px] flex flex-col p-0 border border-white/10 rounded-[3rem] relative bg-white/[0.02] premium-shadow overflow-hidden backdrop-blur-2xl">
+             <div className="scanner-light" />
              {activeNote ? (
-                <div className="flex flex-col h-full p-12 overflow-y-auto custom-scrollbar">
-                  <div className="flex justify-between items-start mb-12">
-                    <div className="space-y-4">
-                       <div className="flex items-center gap-3">
-                         <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400 bg-indigo-400/5 px-4 py-1.5 rounded-lg border border-indigo-400/10">{activeNote.category}</span>
-                         <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">{format(new Date(activeNote.created_at), 'MMM d, yyyy')}</span>
+                <div className="flex flex-col h-full p-12 relative z-10">
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-12">
+                    <div className="space-y-4 flex-1">
+                       <div className="flex items-center gap-4">
+                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 bg-indigo-400/5 px-4 py-2 rounded-xl border border-indigo-400/10 shadow-lg shadow-indigo-400/5">{activeNote.category}</span>
+                         <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 italic">{format(new Date(activeNote.created_at), 'MMM d, yyyy')}</span>
                        </div>
-                       <h3 className="text-5xl font-black text-white tracking-tighter uppercase leading-tight">{activeNote.title}</h3>
+                       <h3 className="text-6xl font-black text-white tracking-tighter uppercase leading-tight italic gradient-text-indigo-white">{activeNote.title}</h3>
                     </div>
                     <div className="flex gap-4">
-                       <button onClick={() => setShowDeleteConfirm(activeNote.id)} className="p-3.5 rounded-xl bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white transition-all"><Trash2 size={20} /></button>
-                       <button onClick={() => startEditing(activeNote)} className="px-10 py-3.5 rounded-xl bg-indigo-500 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-500/30 active:scale-95 transition-all">Modify Node</button>
+                       <button onClick={() => setShowDeleteConfirm(activeNote.id)} className="p-4 rounded-2xl bg-white/5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all border border-white/5 hover:border-rose-500/20"><Trash2 size={24} /></button>
+                       <button onClick={() => startEditing(activeNote)} className="px-10 py-4 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-[0.2em] text-[10px] shadow-xl shadow-indigo-600/30 active:scale-95 transition-all hover:bg-indigo-500 border border-indigo-400/30">Modify Node</button>
                     </div>
                   </div>
 
-                  <div className="prose prose-invert max-w-none mb-20">
-                     <div className="text-xl text-slate-300 leading-relaxed font-medium markdown-content">
+                  <div className="prose prose-invert max-w-none flex-1 overflow-y-auto pr-6 custom-scrollbar">
+                     <div className="text-xl text-slate-300 leading-relaxed font-medium markdown-content pb-20">
                        <ReactMarkdown>{activeNote.content}</ReactMarkdown>
                      </div>
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center space-y-8 opacity-40">
-                  <div className="p-10 rounded-[3rem] bg-indigo-500/5 border border-white/5">
-                     <BrainCircuit size={80} className="text-indigo-400" />
+                <div className="h-full min-h-[500px] flex flex-col items-center justify-center space-y-10 relative z-10">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-indigo-600/20 blur-[50px] rounded-full" />
+                    <div className="relative p-12 rounded-[4rem] bg-indigo-500/5 border border-indigo-500/10 shadow-inner shadow-white/5 translate-y-0 hover:-translate-y-2 transition-transform duration-500">
+                       <BrainCircuit size={100} className="text-indigo-400 drop-shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
+                    </div>
                   </div>
-                  <p className="text-[12px] font-black uppercase tracking-[0.5em] text-slate-500">Select Intelligence Cluster</p>
+                  <div className="text-center space-y-3">
+                    <p className="text-[12px] font-black uppercase tracking-[0.8em] text-slate-500 ml-[0.8em]">Select Intelligence Cluster</p>
+                    <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Neural archive standing by for retrieval.</p>
+                  </div>
                 </div>
               )}
-           </GlassCard>
+           </div>
         </div>
       </div>
     </motion.div>
@@ -289,29 +302,41 @@ const Notes: React.FC = () => {
 
       <AnimatePresence>
         {showDeleteConfirm && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-2xl">
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 bg-slate-950/90 backdrop-blur-xl">
             <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md glass-card p-10 border border-rose-500/20 shadow-[0_0_50px_rgba(244,63,94,0.1)] text-center space-y-8"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-md bg-slate-900 border border-rose-500/30 rounded-[3rem] p-10 shadow-[0_0_50px_rgba(225,29,72,0.2)]"
             >
-              <div className="w-20 h-20 bg-rose-500/10 rounded-3xl flex items-center justify-center mx-auto border border-rose-500/20">
-                <AlertTriangle className="text-rose-500" size={32} />
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Purge Intelligence?</h3>
-                <p className="text-slate-500 font-medium">This action will permanently erase the selected neural node from the archive.</p>
-              </div>
-              <div className="flex gap-4">
-                <button onClick={() => setShowDeleteConfirm(null)} className="flex-1 p-4 rounded-xl bg-white/5 text-slate-400 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all">Abort</button>
-                <button onClick={() => handleDeleteNote(showDeleteConfirm)} className="flex-1 p-4 rounded-xl bg-rose-600 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-rose-600/30 active:scale-95 transition-all">Confirm Purge</button>
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="p-6 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20 shadow-[0_0_20px_rgba(225,29,72,0.1)]">
+                  <Trash2 size={40} />
+                </div>
+                <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter">Protocol: Data Purge</h3>
+                <p className="text-slate-400 font-medium leading-relaxed">
+                  Acknowledge: This action will permanently erase the selected neural node from the archive.
+                </p>
+                <div className="flex gap-4 w-full pt-4">
+                  <button 
+                    onClick={() => setShowDeleteConfirm(null)}
+                    className="flex-1 p-5 rounded-2xl bg-white/5 text-slate-500 font-black uppercase text-xs hover:bg-white/10 transition-all border border-white/5"
+                  >
+                    Abort
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteNote(showDeleteConfirm)}
+                    className="flex-1 p-5 rounded-2xl bg-rose-600 text-white font-black uppercase text-xs shadow-xl shadow-rose-600/30 hover:bg-rose-500 transition-all"
+                  >
+                    Purge Node
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 };
 

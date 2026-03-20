@@ -11,6 +11,8 @@ import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Terminal from './pages/Terminal';
 import Music from './pages/Music';
+import FinancePage from './pages/FinancePage';
+import Home from './pages/Home';
 import OrinHUD from './components/OrinHUD';
 import OrinSplash from './components/OrinSplash';
 import OrinInterface from './components/OrinInterface';
@@ -42,7 +44,8 @@ function App() {
       <OrinInterface />
       <Layout>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/learning" element={<Learning />} />
           <Route path="/roadmap" element={<Roadmap />} />
@@ -51,6 +54,7 @@ function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/terminal" element={<Terminal />} />
           <Route path="/music" element={<Music />} />
+          <Route path="/finance" element={<FinancePage />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </Layout>

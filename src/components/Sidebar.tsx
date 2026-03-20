@@ -17,7 +17,8 @@ import {
   Cpu,
   AlertTriangle,
   Target,
-  Headphones
+  Headphones,
+  Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
@@ -33,7 +34,8 @@ const navGroups = [
     title: 'Tactical Command',
     icon: Command,
     items: [
-      { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+      { icon: LayoutDashboard, label: 'Home', path: '/' },
+      { icon: Zap, label: 'Dashboard', path: '/dashboard' },
       { icon: CheckSquare, label: 'Objectives', path: '/tasks' },
       { icon: RotateCcw, label: 'Bio-Sync', path: '/habits' },
     ]
@@ -54,6 +56,7 @@ const navGroups = [
     icon: Cpu,
     items: [
       { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+      { icon: Wallet, label: 'Finance Hub', path: '/finance' },
       { icon: TerminalIcon, label: 'Kernel Console', path: '/terminal', active: true },
     ]
   }
